@@ -458,6 +458,11 @@ namespace Dynamo.Models
         /// </summary>
         public void Run()
         {
+            if (!RunSettings.RunEnabled)
+            {
+                return;
+            }
+
             graphExecuted = true;
 
             // When Dynamo is shut down, the workspace is cleared, which results
