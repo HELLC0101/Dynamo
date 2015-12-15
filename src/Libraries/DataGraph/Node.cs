@@ -134,30 +134,30 @@ namespace DataGraph
 			}
 		}
 
-		/// <summary>
-		/// Gets the data at the specified level from node.
-		/// 
-		///        [] 	l0
-		///       / \
-		///      o  [] 	l1
-		///        /|\
-		///       o o o l2
-		/// 
-		/// If the level specified is greater than the available levels, a node is 
-		/// added to the root of the tree.
-		/// 
-		/// </summary>
-		/// <returns>The data at level from node.</returns>
-		/// <param name="root">The node from which the data gathering will begin.</param>
-		/// <param name="level">Level.</param>
-		public IEnumerable<object> GetDataAtLevel(int level)
+        /// <summary>
+        /// Gets the data at the specified level from node.
+        /// 
+        ///        [] 	l0
+        ///       / \
+        ///      o  [] 	l1
+        ///        /|\
+        ///       o o o l2
+        /// 
+        /// If the Depth - level specified is less than zero, a node is 
+        /// added to the root of the tree.
+        /// 
+        /// </summary>
+        /// <returns>The data at level from node.</returns>
+        /// <param name="root">The node from which the data gathering will begin.</param>
+        /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
+        public IEnumerable<object> GetDataAtLevel(int level)
 		{
-			if(level > Depth){
-				throw new Exception("The specified level is greater than the depth of the collection.");
-			}
-
+            if (level > -1)
+            {
+                throw new Exception("Levels are specified starting from the leaves (-1) and continuing -2, -3, etc.");
+            }
 			var nodes = new List<Node> ();
-			GetNodesAtLevel (this, ref nodes, level);
+			GetNodesAtLevel (this, ref nodes, Depth + 1 + level);
 			return nodes.Select (n => n.Data);
 		}
 			

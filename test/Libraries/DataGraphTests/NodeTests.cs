@@ -96,30 +96,29 @@ namespace DataGraphTests
 		public void GetDataAtLevel_Jagged(){
 			var node = new Node (JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (node.Depth-2);
+			var data = node.GetDataAtLevel (-2);
 			Console.WriteLine ("@-2");
 			Console.WriteLine (PrintData (data));
-		    var denum = (IEnumerable<object>)data.First();
-            Assert.AreEqual(denum.First(), "foo");
+            Assert.AreEqual(data.First(), "foo");
 		}
 
 		[Test]
 		public void GetDataAtLevel_ThreeDimension(){
 			var node = new Node (ThreeDimensionalTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (node.Depth - 1);
+			var data = node.GetDataAtLevel (-1);
 			Console.WriteLine ("@-1");
-			Assert.AreEqual (data.First (), "A");
+			Assert.AreEqual (data.First (), "a");
 			Console.WriteLine (PrintData (data));
-			Assert.AreEqual (data.Last (), arr3);
+			Assert.AreEqual (data.Last (), "c");
 		}
 
 		[Test]
 		public void GetDataAtLevel_Jagged_AtLevel(){
 			var node = new Node (JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (node.Depth);
-			Console.WriteLine ("@depth");
+			var data = node.GetDataAtLevel (-1);
+			Console.WriteLine ("@-1");
 			Assert.AreEqual (data.First (), arr1.First ());
 			Console.WriteLine (PrintData (data));
 			Assert.AreEqual (data.Last (), arr2.Last ());
@@ -140,11 +139,10 @@ namespace DataGraphTests
 		public void GetDataAtLevel_NegativeIndex(){
 			var node = new Node (JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var initalDepth = node.Depth;
-			var data = node.GetDataAtLevel (node.Depth-5);
+			var data = node.GetDataAtLevel (-5);
 			Console.WriteLine ("@-5");
 			Console.WriteLine (PrintData (data));
-			Assert.AreEqual (5, node.GetRoot ().Depth);
+			Assert.AreEqual (4, node.GetRoot ().Depth);
 		}
 
 		[Test]
@@ -157,13 +155,13 @@ namespace DataGraphTests
 		public void GetDataAtLevel_Case1(){
 			var node = new Node (Phase2 ());
 
-			var data = node.GetDataAtLevel (node.Depth-2);
+			var data = node.GetDataAtLevel (-3);
 			Assert.AreEqual (data.Count (), 2);
 
-			data = node.GetDataAtLevel (node.Depth-1);
+			data = node.GetDataAtLevel (-2);
 			Assert.AreEqual (data.Count (), 4);
 
-			data = node.GetDataAtLevel (node.Depth);
+			data = node.GetDataAtLevel (-1);
 			Assert.AreEqual (data.Count (), 12);
 		}
 
