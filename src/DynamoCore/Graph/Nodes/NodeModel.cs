@@ -909,7 +909,8 @@ namespace Dynamo.Graph.Nodes
 
             try
             {
-                result = BuildOutputAst(inputAstNodes);
+                var levelledNodes = InsertListLevelDataAstNodes(inputAstNodes);
+                result = BuildOutputAst(levelledNodes);
             }
             catch (Exception e)
             {
@@ -967,6 +968,22 @@ namespace Dynamo.Graph.Nodes
                                               }
                                       },
                                       GetAstIdentifierForOutputIndex(index))));
+        }
+
+        private List<AssociativeNode> InsertListLevelDataAstNodes(List<AssociativeNode> inputAstNodes)
+        {
+            var newAstNodes = new List<AssociativeNode>();
+
+            // For right now do -1 as a test.
+            foreach (var node in inputAstNodes)
+            {
+                var intNode = AstFactory.BuildIntNode(-1);
+                var func = new Func<object, int, IEnumerable<object>>(DataGraph.Node.GetDataAtLevel);
+                var funcCall = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() {node, intNode});
+                newAstNodes.Add(funcCall);
+            }
+
+            return newAstNodes;
         }
 
         /// <summary>

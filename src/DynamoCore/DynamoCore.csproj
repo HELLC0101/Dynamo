@@ -317,6 +317,10 @@ limitations under the License.
       <Name>DynamoUtilities</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Libraries\DataGraph\DataGraph.csproj">
+      <Project>{bb8539ff-1d20-4c7c-9e88-fa38df4907f0}</Project>
+      <Name>DataGraph</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Libraries\DynamoUnits\Units.csproj">
       <Project>{6e0a079e-85f1-45a1-ad5b-9855e4344809}</Project>
       <Name>Units</Name>

@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
+using Autodesk.DesignScript.Runtime;
 
 namespace DataGraph
 {
@@ -160,6 +160,13 @@ namespace DataGraph
 			GetNodesAtLevel (this, ref nodes, Depth + 1 + level);
 			return nodes.Select (n => n.Data);
 		}
+
+	    public static IEnumerable<object> GetDataAtLevel([ArbitraryDimensionArrayImport] object data, int level)
+	    {
+	        var node = new Node(data);
+	        var result = node.GetDataAtLevel(level);
+	        return result;
+	    } 
 			
 		/// <summary>
 		/// Get all the nodes at the specified level, starting at the specified node.
