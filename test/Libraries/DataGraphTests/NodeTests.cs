@@ -186,8 +186,8 @@ namespace DataGraphTests
         public void CloneWithNullsAtLevel_Jagged()
         {
             var node = new Node(JaggedTestArray());
-            var nodeWithNulls = node.CloneWithNullsAtLevel(node.Depth - 2);
-            var leafData = nodeWithNulls.GetDataAtLevel(node.Depth-2);
+            var nodeWithNulls = node.CloneWithNullsAtLevel(-2);
+            var leafData = nodeWithNulls.GetDataAtLevel(-2);
             foreach (var l in leafData)
             {
                 if (l is IEnumerable)

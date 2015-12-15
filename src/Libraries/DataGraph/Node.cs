@@ -243,7 +243,7 @@ namespace DataGraph
 	    public Node CloneWithNullsAtLevel(int level)
 	    {
 	        var newNode = (Node) this.MemberwiseClone();
-            newNode.NullDataAtLevel(level);
+            newNode.NullDataAtLevel(Depth + 1 + level);
 	        return newNode;
 	    }
 
