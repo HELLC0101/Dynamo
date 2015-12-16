@@ -207,7 +207,7 @@ namespace DataGraphTests
             var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
             node.NullAtLevelAndBelow(2);
-            var data = new[] { new[] { "foobar", "foobuzz"}, new[] {"foobarbuzz", "foobuzzbar"} };
+            var data = new[] { "foobar", "foobuzz", "foobarbuzz", "foobuzzbar" };
             var newNode = new ArrayNode(data);
             node.OverwriteDataAtLevel(newNode, 2);
             Console.WriteLine(PrintData(node.Data));

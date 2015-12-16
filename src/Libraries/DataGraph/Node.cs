@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,6 +46,70 @@ namespace DataGraph
         /// </summary>
         /// <returns>The depth.</returns>
 	    public abstract int Depth();
+
+	    public static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
+	    {
+	        var leafNode = startingNode as LeafNode;
+	        var superimposeLeaf = nodeToSuperimpose as LeafNode;
+
+	        if (leafNode != null)
+	        {
+	            if (superimposeLeaf != null)
+	            {
+	                // If the superimpose node is a leaf node too
+	                // then just take its data. 
+	                leafNode.SetData(superimposeLeaf.Data);
+	                return;
+	            }
+	            else
+	            {
+	                // We've got an array node in the superimposition.
+	                // We need to swap out the leaf node in the original
+	                // tree for an array node.
+	                leafNode.Parent.ReplaceChild(leafNode, nodeToSuperimpose);
+	                return;
+	            }
+	        }
+
+	        var startingArrNode = startingNode as ArrayNode;
+
+	        // If the starting node is an array node and the superimpose
+	        // node is a leaf - throw an exception
+	        if (superimposeLeaf != null)
+	        {
+	            throw new Exception("We can't superimpose a leaf onto an array.");
+	        }
+
+	        var superimposeArrNode = nodeToSuperimpose as ArrayNode;
+
+	        var width = Math.Max(startingArrNode.Children.Count(), superimposeArrNode.Children.Count());
+
+	        for (var i = 0; i < width; i++)
+	        {
+	            if (i >= superimposeArrNode.Children.Count())
+	            {
+	                // The superimpose node doesn't have any 
+	                // more data.
+	                return;
+	            }
+
+                var newSuperimposeNode = superimposeArrNode.Children.ElementAt(i);
+                if (i >= startingArrNode.Children.Count())
+	            {
+                    // If we have more to superimpose than we
+                    // have slots allowed, add the node.
+                    startingArrNode.AddChild(newSuperimposeNode);
+	            }
+	            else
+	            {
+                    // Set the cursor at the new starting location
+                    var newStartingNode = startingArrNode.Children.ElementAt(i);
+
+                    // Recurse down the tree superimposing as you go!
+                    SuperimposeFromNodeDown(newStartingNode, newSuperimposeNode);
+                }
+	        }
+	    }
 	}
 
     /// <summary>
@@ -219,7 +284,7 @@ namespace DataGraph
         /// <summary>
         /// Replace a child of this node with a new node.
         /// </summary>
-        private void ReplaceChild(Node existingNode, Node newNode)
+        internal void ReplaceChild(Node existingNode, Node newNode)
         {
             var foundNode = children.FirstOrDefault(c => c == existingNode);
             if (foundNode == null)
@@ -302,82 +367,17 @@ namespace DataGraph
             var nodeParents = nodesAtLevel.Select(n => n.Parent).Distinct().ToList();
 
             var overwriteNodes = new List<Node>();
-            GetNodesAtLevel(overwriteNode, ref overwriteNodes, overwriteNode.Depth()-1);
+            GetNodesAtLevel(overwriteNode, ref overwriteNodes, 1);
             var overwriteParents = overwriteNodes.Select(n => n.Parent).Distinct().ToList();
-
+            
             for (var i = 0; i < nodeParents.Count(); i++)
             {
-                if (i >= overwriteParents.Count)
+                if (i >= overwriteParents.Count())
                 {
                     break;
                 }
 
-                var replaceNode = nodeParents[i];
-                for (var j = 0; j < overwriteNodes.Count(); j++)
-                {
-                    var newNode = overwriteNodes[j];
-                    if (j >= replaceNode.Children.Count())
-                    {
-                        replaceNode.AddChild(newNode);
-                    }
-                    else
-                    {
-                        replaceNode.ReplaceChildAtIndex(j, newNode);
-                    }
-                }
-            }
-        }
-
-        public static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
-        {
-            var leafNode = startingNode as LeafNode;
-            var superimposeLeaf = nodeToSuperimpose as LeafNode;
-
-            if (leafNode != null)
-            {
-                if (superimposeLeaf != null)
-                {
-                    // If the superimpose node is a leaf node too
-                    // then just take its data. 
-                    leafNode.SetData(superimposeLeaf.Data);
-                    return;
-                }
-                else
-                {
-                    // We've got an array node in the superimposition.
-                    // We need to swap out the leaf node in the original
-                    // tree for an array node.
-                    leafNode.Parent.ReplaceChild(leafNode, nodeToSuperimpose);
-                    return;
-                }
-            }
-
-            var startingArrNode = startingNode as ArrayNode;
-
-            // If the starting node is an array node and the superimpose
-            // node is a leaf - throw an exception
-            if (superimposeLeaf != null)
-            {
-                throw new Exception("We can't superimpose a leaf onto an array.");
-            }
-
-            var superimposeArrNode = nodeToSuperimpose as ArrayNode;
-
-            for (var i = 0; i < startingArrNode.Children.Count(); i++)
-            {
-                if (i >= superimposeArrNode.Children.Count())
-                {
-                    // The superimpose node doesn't have any 
-                    // more data.
-                    return;
-                }
-
-                // Set the cursor at the new starting location
-                var newStartingNode = startingArrNode.Children.ElementAt(i);
-                var newSuperimposeNode = superimposeArrNode.Children.ElementAt(i);
-
-                // Recurse down the tree superimposing as you go!
-                SuperimposeFromNodeDown(newStartingNode, newSuperimposeNode);
+                SuperimposeFromNodeDown(nodeParents[i], overwriteParents.ElementAt(i));
             }
         }
 
