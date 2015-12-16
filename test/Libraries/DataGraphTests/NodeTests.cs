@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -17,86 +16,63 @@ namespace DataGraphTests
 
 		[Test]
 		public void Level_SingleDimension(){
-			var node = new Node (SingleDimensionalTestArray ());
-			Assert.AreEqual (node.Level, 1);
-			Assert.AreEqual (node.Children.First ().Level, 2);
+			var node = new ArrayNode(SingleDimensionalTestArray ());
+			Assert.AreEqual (node.Level, 0);
+			Assert.AreEqual (node.Children.First ().Level, 1);
 		}
 
 		[Test]
 		public void Level_Jagged(){
-			var node = new Node (JaggedTestArray ());
-			Assert.AreEqual (node.Children.First ().Level, 2);
-			Assert.AreEqual (node.Children.Last ().Level, 2);
-		}
-
-		[Test]
-		public void ToString_SingleDimension(){
-
-			var node = new Node (SingleDimensionalTestArray ());
-			Assert.AreEqual (node.ToString (), "0");
-		}
-
-		[Test]
-		public void ToString_TwoDimension(){
-			var node = new Node (TwoDimensionalTestArray ());
-			var data = node.GetAllLeafNodes ();
-			Assert.AreEqual (data.First ().ToString (), "0.0.0");
-			Assert.AreEqual (data.Last ().ToString (), "0.1.2");
-		}
-
-		[Test]
-		public void ToString_Jagged(){
-			var node = new Node (JaggedTestArray ());
-			var data = node.GetAllLeafNodes ();
-			Assert.AreEqual (data.First ().ToString (), "0.0");
-			Assert.AreEqual (data.Last ().ToString (), "0.2.2");
+			var node = new ArrayNode(JaggedTestArray ());
+			Assert.AreEqual (node.Children.First ().Level, 1);
+			Assert.AreEqual (node.Children.Last ().Level, 1);
 		}
 
 		[Test]
 		public void Depth_SingleDimension(){
-			var node1 = new Node (SingleDimensionalTestArray ());
-			Assert.AreEqual (2, node1.Depth);
+			var node1 = new ArrayNode(SingleDimensionalTestArray ());
+			Assert.AreEqual (2, node1.Depth());
 		}
 
 		[Test]
 		public void Depth_TwoDimension(){
-			var node2 = new Node (TwoDimensionalTestArray ());
-			Assert.AreEqual (3, node2.Depth);
+			var node2 = new ArrayNode(TwoDimensionalTestArray ());
+			Assert.AreEqual (3, node2.Depth());
 		}
 
 		[Test]
 		public void Depth_Jagged(){
-			var node2 = new Node (JaggedTestArray ());
-			Assert.AreEqual (3, node2.Depth);
+			var node2 = new ArrayNode(JaggedTestArray ());
+			Assert.AreEqual (3, node2.Depth());
 		}
 
 		[Test]
 		public void GetAllLeafData_SingleDimension()
 		{
-			var node = new Node (SingleDimensionalTestArray ());
-			var data = Node.GetAllLeafData (node);
+			var node = new ArrayNode(SingleDimensionalTestArray ());
+			var data = node.GetAllLeafData ();
 			Assert.AreEqual(data.Count (), 3);
 		}
 
 		[Test]
 		public void GetAllLeafData_TwoDimension(){
-			var node = new Node (TwoDimensionalTestArray ());
-			var data = Node.GetAllLeafData (node);
+			var node = new ArrayNode(TwoDimensionalTestArray ());
+			var data = node.GetAllLeafData ();
 			Assert.AreEqual(data.Count (), 6);
 		}
 
 		[Test]
 		public void GetAllLeafData_Jagged(){
-			var node = new Node (JaggedTestArray ());
-			var data = Node.GetAllLeafData (node);
+			var node = new ArrayNode(JaggedTestArray ());
+			var data = node.GetAllLeafData ();
 			Assert.AreEqual(data.Count (), 7);
 		}
 
 		[Test]
 		public void GetDataAtLevel_Jagged(){
-			var node = new Node (JaggedTestArray ());
+			var node = new ArrayNode(JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (-2);
+			var data = node.GetDataAtLevel (1);
 			Console.WriteLine ("@-2");
 			Console.WriteLine (PrintData (data));
             Assert.AreEqual(data.First(), "foo");
@@ -104,9 +80,9 @@ namespace DataGraphTests
 
 		[Test]
 		public void GetDataAtLevel_ThreeDimension(){
-			var node = new Node (ThreeDimensionalTestArray ());
+			var node = new ArrayNode(ThreeDimensionalTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (-1);
+			var data = node.GetDataAtLevel (3);
 			Console.WriteLine ("@-1");
 			Assert.AreEqual (data.First (), "a");
 			Console.WriteLine (PrintData (data));
@@ -115,9 +91,9 @@ namespace DataGraphTests
 
 		[Test]
 		public void GetDataAtLevel_Jagged_AtLevel(){
-			var node = new Node (JaggedTestArray ());
+			var node = new ArrayNode(JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (-1);
+			var data = node.GetDataAtLevel (2);
 			Console.WriteLine ("@-1");
 			Assert.AreEqual (data.First (), arr1.First ());
 			Console.WriteLine (PrintData (data));
@@ -126,9 +102,9 @@ namespace DataGraphTests
 
 		[Test]
 		public void GetDataAtLevel_Jagged_Leaves(){
-			var node = new Node (JaggedTestArray ());
+			var node = new ArrayNode(JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = Node.GetAllLeafData (node);
+			var data = node.GetAllLeafData ();
 			Console.WriteLine ("@leaves");
 			Assert.AreEqual (data.First (), "foo");
 			Console.WriteLine (PrintData (data));
@@ -137,68 +113,92 @@ namespace DataGraphTests
 
 		[Test]
 		public void GetDataAtLevel_NegativeIndex(){
-			var node = new Node (JaggedTestArray ());
+			var node = new ArrayNode(JaggedTestArray ());
 			Console.WriteLine (PrintData (node.Data));
-			var data = node.GetDataAtLevel (-5);
-			Console.WriteLine ("@-5");
+			var data = node.GetDataAtLevel (-1);
+			Console.WriteLine ("@-1");
 			Console.WriteLine (PrintData (data));
-			Assert.AreEqual (4, node.GetRoot ().Depth);
+			Assert.AreEqual (4, node.GetRoot ().Depth());
 		}
 
 		[Test]
 		public void GetDataAtLevel_DepthGreaterThanSize_ThrowsException(){
-			var node = new Node (JaggedTestArray ());
+			var node = new ArrayNode(JaggedTestArray ());
 			Assert.Throws<Exception> (()=>node.GetDataAtLevel (10));
 		}
 
 		[Test]
 		public void GetDataAtLevel_Case1(){
-			var node = new Node (Phase2 ());
+			var node = new ArrayNode (Phase2 ());
 
-			var data = node.GetDataAtLevel (-3);
+			var data = node.GetDataAtLevel (0);
+			Assert.AreEqual (data.Count (), 1);
+
+			data = node.GetDataAtLevel (1);
 			Assert.AreEqual (data.Count (), 2);
 
-			data = node.GetDataAtLevel (-2);
-			Assert.AreEqual (data.Count (), 4);
+            data = node.GetDataAtLevel(2);
+            Assert.AreEqual(data.Count(), 4);
 
-			data = node.GetDataAtLevel (-1);
+            data = node.GetDataAtLevel (3);
 			Assert.AreEqual (data.Count (), 12);
 		}
 
 		[Test]
 		public void GetAllLeafData_IsLeaves_CorrectCount(){
-			var node = new Node (JaggedTestArray ());
-			var data = Node.GetAllLeafData (node);
+			var node = new ArrayNode(JaggedTestArray ());
+			var data = node.GetAllLeafData ();
 			Assert.AreEqual(7, data.Count ());
 		}
 
-		[Test]
-		public void CloneWithNulls_Jagged(){
-			var node = new Node (JaggedTestArray ());
-		    var nodeWithNulls = node.CloneWithNulls();
-			var leaves = nodeWithNulls.GetAllLeafNodes ();
-			foreach(var l in leaves){
-				Assert.AreEqual(null, l.Data);
-			}
-		}
+	    [Test]
+	    public void NullAtLevel_1_JaggedArray()
+	    {
+	        var node = new ArrayNode(JaggedTestArray());
+            Console.WriteLine(PrintData(node.Data));
+            node.NullAtLevel(1);
+            Console.WriteLine("Nulled at level 1...");
+            Console.WriteLine(PrintData(node.Data));
+	        var leafData = node.GetAllLeafNodes().Select(n => n.Data);
+            Assert.True(leafData.All(d=>d==null));
+	    }
 
         [Test]
-        public void CloneWithNullsAtLevel_Jagged()
+        public void NullAtLevel_2_JaggedArray()
         {
-            var node = new Node(JaggedTestArray());
-            var nodeWithNulls = node.CloneWithNullsAtLevel(-2);
-            var leafData = nodeWithNulls.GetDataAtLevel(-2);
-            foreach (var l in leafData)
-            {
-                if (l is IEnumerable)
-                {
-                    Assert.AreEqual(l, Enumerable.Repeat<object>(null, 3));
-                }
-                else
-                {
-                    Assert.AreEqual(null, l);
-                }
-            }
+            var node = new ArrayNode(JaggedTestArray());
+            Console.WriteLine(PrintData(node.Data));
+            node.NullAtLevel(2);
+            Console.WriteLine("Nulled at level 2...");
+            Console.WriteLine(PrintData(node.Data));
+            var data = node.GetDataAtLevel(2);
+            Assert.True(data.All(d=>d==null));
+        }
+
+	    [Test]
+	    public void OverwriteNodesAtLevel_JaggedArray_OverwriteWithSmallerData()
+	    {
+	        var node = new ArrayNode(JaggedTestArray());
+            Console.WriteLine(PrintData(node.Data));
+            node.NullAtLevel(2);
+	        var data = new[] {"foobar", "foobuzz"};
+            var newNode = new ArrayNode(data);
+            node.OverwriteDataAtLevel(newNode,2);
+            Console.WriteLine(PrintData(node.Data));
+	        Assert.AreEqual(node.GetDataAtLevel(2).First(), "foobar");
+	    }
+
+        [Test]
+        public void OverwriteNodesAtLevel_JaggedArray_OverwriteWithLargerData()
+        {
+            var node = new ArrayNode(JaggedTestArray());
+            Console.WriteLine(PrintData(node.Data));
+            node.NullAtLevel(2);
+            var data = new[] { "foobar", "foobuzz", "foobarbuzz", "foobuzzbar" };
+            var newNode = new ArrayNode(data);
+            node.OverwriteDataAtLevel(newNode, 2);
+            Console.WriteLine(PrintData(node.Data));
+            Assert.AreEqual(node.GetDataAtLevel(2).First(), "foobar");
         }
 
         private IEnumerable SingleDimensionalTestArray(){

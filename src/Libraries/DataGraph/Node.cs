@@ -2,137 +2,116 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Autodesk.DesignScript.Runtime;
 
 namespace DataGraph
 {
 	/// <summary>
-	/// The Node class represents a nested array structure as
-	/// a tree where the nodes are arrays and the leaves are single objects.
+	/// Base class for all Node classes.
 	/// </summary>
-	public class Node{
+	public abstract class Node
+	{
+	    private int level = 0;
+	    private uint index = 0;
 
-		/// <summary>
-		/// Gets the address of the node in the tree as an array of 
-		/// ints representing the location of the node in each sub-array.
-		/// 
-		/// For example, 
-		/// </summary>
-		/// <value>The address.</value>
-		public List<uint> Address{ get;}
-
-		/// <summary>
+        /// <summary>
 		/// Gets the level.
 		/// </summary>
 		/// <value>The level.</value>
-		public int Level{
-			get{return Address.Count;}
+		public int Level
+        {
+			get { return level; }
 		}
 
 		/// <summary>
 		/// Gets the Node which is the parent of this node.
 		/// </summary>
 		/// <value>A node, or null if the node is a root node.</value>
-		public Node Parent{ get; internal set;}
+		public Node Parent{ get; internal set; }
 
-		/// <summary>
-		/// Gets nodes which are children of this node.
-		/// </summary>
-		/// <value>The children.</value>
-		public List<Node> Children { get;}
+        public abstract object Data { get; }
 
-		/// <summary>
-		/// Gets a value indicating whether this instance is root.
-		/// </summary>
-		/// <value><c>true</c> if this instance is root; otherwise, <c>false</c>.</value>
-		public bool IsRoot{
-			get{return Parent == null;}
-		}
+        public uint Index { get { return index; } }
 
-		/// <summary>
-		/// Gets a value indicating whether this instance has children.
-		/// </summary>
-		/// <value><c>true</c> if this instance has children; otherwise, <c>false</c>.</value>
-		public bool IsLeaf{
-			get{return Children.Count == 0;}
-		}
-
-		/// <summary>
-		/// The number of levels from this node to the leaves.
-		/// </summary>
-		/// <value>The depth.</value>
-		public int Depth{ get;}
-
-		/// <summary>
-		/// Gets the data associated with this node.
-		/// </summary>
-		/// <value>A reference to the original object or IEnumerable
-		/// stored at this position.</value>
-		public object Data{ get; private set;}
-
-		internal Node(object data, Node parent = null, uint index = 0){
-
+		internal Node(Node parent = null, uint index = 0)
+        {
 			Parent = parent;
-			Data = data;
+		    level = parent != null ? parent.level + 1 : 0;
+		    this.index = index;
+        }
 
-			Children = new List<Node> ();
+        /// <summary>
+        /// Returns the depth of the graph from this node.
+        /// </summary>
+        /// <returns>The depth.</returns>
+	    public abstract int Depth();
 
-			Address = new List<uint> ();
-			if(parent != null){
-				Address.AddRange (parent.Address);
-			}
-			Address.Add (index);
+	    public void UpdateParent(Node newParent)
+	    {
+	        Parent = newParent;
+	        level = Parent.Level + 1;
+	    }
+	}
 
-			if(data is IEnumerable && data.GetType() != typeof(string)){
-				uint count = 0;
-				foreach(var item in (IEnumerable)data){
-					Children.Add (new Node(item, this, count));
-					count++;
-				}
-			}
+    /// <summary>
+    /// A node which represents an array.
+    /// </summary>
+    public class ArrayNode : Node
+    {
+        private readonly List<Node> children = new List<Node>();
 
-			int depth = 0;
-			GetMaxDepth (ref depth,0);
-			Depth = depth;
-		}
+        public ArrayNode(IEnumerable data, Node parent = null, uint index = 0) : base(parent, index)
+        {
+            uint count = 0;
+            foreach (var item in data)
+            {
+                var enumerable = item as IEnumerable;
+                if (enumerable != null && enumerable.GetType() != typeof (string))
+                {
+                    children.Add(new ArrayNode(enumerable, this, count));
+                }
+                else
+                {
+                    children.Add(new LeafNode(item, this, count));
+                }
+                
+                count++;
+            }
+        }
 
-		public static Node FromData(object data)
-		{
-			if(data == null){
-				throw new Exception ("A node cannot be created with null data.");
-			}
+        /// <summary>
+        /// Traverse up the tree to find the root.
+        /// </summary>
+        public ArrayNode GetRoot()
+        {
+            if (Parent == null)
+            {
+                return this;
+            }
 
-			return new Node (data);
-		}
-		
-		/// <summary>
-		/// Returns the depth of the graph from this node.
-		/// </summary>
-		/// <returns>The depth.</returns>
-		private void GetMaxDepth(ref int maxDepth, int currentDepth){
-			var newDepth = currentDepth+1;
+            var root = Parent;
+            while (root.Parent != null)
+            {
+                root = root.Parent;
+            }
+            return root as ArrayNode;
+        }
 
-			if(Children.Count == 0){
-				maxDepth = Math.Max (newDepth, maxDepth);
-			}
-			foreach(var node in Children){
-				node.GetMaxDepth (ref maxDepth, newDepth);
-			}
+        /// <summary>
+        /// A collection of Nodes which are children of this node.
+        /// </summary>
+        public IEnumerable<Node> Children
+        {
+            get
+            {
+                return children;
+            }
+        }
 
-		}
-
-		/// <summary>
-		/// Traverse up the tree to find the root.
-		/// </summary>
-		/// <returns>The root.</returns>
-		public Node GetRoot(){
-			if(IsRoot){
-				return this;
-			}
-			else{
-				return Parent.GetRoot ();
-			}
-		}
+        public override int Depth()
+        {
+            var nodes = GetAllLeafNodes();
+            return nodes.Max(n => n.Level + 1);
+        }
 
         /// <summary>
         /// Gets the data at the specified level from node.
@@ -143,7 +122,7 @@ namespace DataGraph
         ///        /|\
         ///       o o o l2
         /// 
-        /// If the Depth - level specified is less than zero, a node is 
+        /// If the level specified is less than zero, a node is 
         /// added to the root of the tree.
         /// 
         /// </summary>
@@ -151,151 +130,201 @@ namespace DataGraph
         /// <param name="root">The node from which the data gathering will begin.</param>
         /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
         public IEnumerable<object> GetDataAtLevel(int level)
-		{
-            if (level > -1)
-            {
-                throw new Exception("Levels are specified starting from the leaves (-1) and continuing -2, -3, etc.");
-            }
-			var nodes = new List<Node> ();
-			GetNodesAtLevel (this, ref nodes, Depth + 1 + level);
-			return nodes.Select (n => n.Data);
-		}
-
-	    public static IEnumerable<object> GetDataAtLevel([ArbitraryDimensionArrayImport] object data, int level)
-	    {
-	        var node = new Node(data);
-	        var result = node.GetDataAtLevel(level);
-	        return result;
-	    } 
-			
-		/// <summary>
-		/// Get all the nodes at the specified level, starting at the specified node.
-		/// 
-		/// If the level specified is a negative number then the root node will be replaced
-		/// with an additional root node.
-		/// </summary>
-		private static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level){
-			if(level < 0){
-				var count = 0;
-				Node currentRoot = node;
-				while(count > level)
-				{
-					var newNode = new Node (new[]{currentRoot.Data});
-					currentRoot.Parent = newNode;
-					currentRoot = newNode;
-					count=count-1;
-				}
-				gatheredNodes.Add (currentRoot);
-				return;
-			}
-
-			if(node.Level == level){
-				gatheredNodes.Add (node);
-				return;
-			}else{
-				foreach (var n in node.Children) {
-					GetNodesAtLevel (n, ref gatheredNodes, level);
-				}
-			}
-		}
-
-		/// <summary>
-		/// Get all leaf nodes from the specified node.
-		/// </summary>
-		/// <param name="node">Node.</param>
-		/// <param name="gatheredLeaves">Gathered leaves.</param>
-		public List<Node> GetAllLeafNodes(){
-			var gatheredLeaves = new List<Node>();
-			GetAllLeafNodesImpl (this, ref gatheredLeaves);
-			return gatheredLeaves;
-		}
-
-		private static void GetAllLeafNodesImpl(Node node, ref List<Node> gatheredLeaves){
-			if(node.IsLeaf){
-				gatheredLeaves.Add (node);
-			}
-
-			foreach(var c in node.Children){
-				GetAllLeafNodesImpl (c, ref gatheredLeaves);
-			}
-		}
-
-		/// <summary>
-		/// Get all data associated with leaf nodes from the specified node.
-		/// </summary>
-		/// <returns>The all leaf data.</returns>
-		/// <param name="node">Node.</param>
-		public static IEnumerable<object> GetAllLeafData(Node node){
-			var leaves = node.GetAllLeafNodes ();
-			return leaves.Select (n => n.Data);
-		}
-
-		/// <summary>
-		/// Clones the node and returns a node with the same topology, 
-		/// but full of nulls.
-		/// </summary>
-		public Node CloneWithNulls()
         {
-			var newNode = (Node)this.MemberwiseClone ();
-			newNode.NullData();
-			return newNode;
-		}
+            if (level >= Depth())
+            {
+                throw new Exception("You cannot specify a level deeper than the depth of the tree.");
+            }
+
+            var nodes = new List<Node>();
+            GetNodesAtLevel(this, ref nodes, level);
+            return nodes.Select(n => n.Data);
+        }
 
         /// <summary>
-        /// Clones the node and returns a node with the same topology,
-        /// with nulls at all positions on a given level.
+        /// Get all the nodes at the specified level, starting at the specified node.
+        /// 
+        /// If the level specified is a negative number then the root node will be replaced
+        /// with an additional root node.
         /// </summary>
-        /// <param name="level"></param>
-        /// <returns></returns>
-	    public Node CloneWithNullsAtLevel(int level)
-	    {
-	        var newNode = (Node) this.MemberwiseClone();
-            newNode.NullDataAtLevel(Depth + 1 + level);
-	        return newNode;
-	    }
+        private static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level)
+        {
+            while (true)
+            {
+                if (node.Level == level)
+                {
+                    gatheredNodes.Add(node);
+                    return;
+                }
 
-		private void NullData()
-		{
-		    Data = Children.Count == 0 ? null : 
-                Enumerable.Repeat<object> (null, Children.Count);
+                if (level < 0)
+                {
+                    var count = 0;
+                    var currentRoot = node;
+                    while (count > level)
+                    {
+                        var newNode = new ArrayNode(new[] {currentRoot.Data});
+                        currentRoot.Parent = newNode;
+                        currentRoot = newNode;
+                        count = count - 1;
+                    }
+                    gatheredNodes.Add(currentRoot);
+                    return;
+                }
 
-		    foreach(var c in Children){
-				c.NullData ();
-			}
-		}
+                if (node is ArrayNode)
+                {
+                    var arrNode = (ArrayNode) node;
+                    foreach (var n in arrNode.children)
+                    {
+                        GetNodesAtLevel(n, ref gatheredNodes, level);
+                    }
+                }
 
-	    private void NullDataAtLevel(int level)
-	    {
-	        if (Level == level)
-	        {
-	            Data = Children.Count == 0 ? null : 
-                    Enumerable.Repeat<object>(null, Children.Count);
+                break;
+            }
+        }
+
+        /// <summary>
+        /// Get all leaf nodes from the specified node.
+        /// </summary>
+        public IEnumerable<LeafNode> GetAllLeafNodes()
+        {
+            var gatheredLeaves = new List<LeafNode>();
+            GetAllLeafNodesImpl(this, ref gatheredLeaves);
+            return gatheredLeaves;
+        }
+
+        private static void GetAllLeafNodesImpl(Node node, ref List<LeafNode> gatheredLeaves)
+        {
+            var item = node as LeafNode;
+            if (item != null)
+            {
+                gatheredLeaves.Add(item);
+            }
+            else
+            {
+                foreach (var c in ((ArrayNode)node).children)
+                {
+                    GetAllLeafNodesImpl(c, ref gatheredLeaves);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get all data associated with leaf nodes from the specified node.
+        /// </summary>
+        /// <returns>The all leaf data.</returns>
+        public IEnumerable<object> GetAllLeafData()
+        {
+            var leaves = GetAllLeafNodes();
+            return leaves.Select(n => n.Data);
+        }
+
+        /// <summary>
+        /// Replace a child of this node with a new node.
+        /// </summary>
+        private void ReplaceChild(Node existingNode, Node newNode)
+        {
+            var foundNode = children.FirstOrDefault(c => c == existingNode);
+            if (foundNode == null)
+            {
+                throw new Exception("The specified node could not be found in the parent's collection.");
+            }
+            var index = children.IndexOf(foundNode);
+            children.Remove(existingNode);
+            children.Insert(index, newNode);
+            newNode.UpdateParent(this);
+        }
+
+        /// <summary>
+        /// Null all nodes at the specified level.
+        /// </summary>
+        public void NullAtLevel(int level)
+        {
+            var nodesAtLevel = new List<Node>();
+            GetNodesAtLevel(this, ref nodesAtLevel, level);
+
+            foreach (var n in nodesAtLevel)
+            {
+                var parent = (ArrayNode) n.Parent;
+                parent.ReplaceChild(n, new LeafNode(null, parent, n.Index));
+            }
+        }
+
+        /// <summary>
+        /// Overwrite the data at the specified level with the nodes
+        /// from the overwriteNode.
+        /// </summary>
+        public void OverwriteDataAtLevel(Node overwriteNode, int level)
+        {
+            var nodesAtLevel = new List<Node>();
+            GetNodesAtLevel(this, ref nodesAtLevel, level);
+
+            var overwriteNodes = new List<Node>();
+            GetNodesAtLevel(overwriteNode, ref overwriteNodes, 1);
+
+            for (var i = 0; i < nodesAtLevel.Count; i++)
+            {
+                if (i >= overwriteNodes.Count)
+                {
+                    break;
+                }
+
+                var nodeToReplace = nodesAtLevel[i];
+                var parentForReplace = (ArrayNode) nodeToReplace.Parent;
+                parentForReplace.ReplaceChild(nodeToReplace, overwriteNodes[i]);
+            }
+        }
+
+        private IEnumerable<object> ToEnumerable()
+        {
+            var result = new List<object>();
+
+            foreach (var c in children)
+            {
+                if (c is ArrayNode)
+                {
+                    result.AddRange(new[] {((ArrayNode) c).ToEnumerable()});
+                }
+                else { result.Add(((LeafNode)c).Data);}
             }
 
-	        foreach (var c in Children)
-	        {
-	            c.NullDataAtLevel(level);
-	        }
-	    }
+            return result;
+        }
 
-		/// <summary>
-		/// Give a node with a different structure, update the structure of 
-		/// this node to match, filling in previously non-existing branches with nulls.
-		/// 
-		/// If the structure to superimpose is a subset of this node's graph,
-		/// then no changes will be made.
-		/// </summary>
-		public void Superimpose(Node structure){
+        /// <summary>
+        /// Recursively build a data structure representing all 
+        /// the data contained in Nodes which are children of this node.
+        /// </summary>
+        public override object Data
+        {
+            get
+            {
+                return ToEnumerable();
+            }
+        }
+    }
 
+    /// <summary>
+    /// A node which represents a piece of data.
+    /// </summary>
+    public class LeafNode : Node
+    {
+        /// <summary>
+        /// Gets the data associated with this node.
+        /// </summary>
+        public override object Data { get; }
 
-		}
-			
-		public override string ToString ()
-		{
-			return string.Join (".",Address.Select (x => x.ToString ()));
-		}
+        public LeafNode(object data, Node parent = null, uint index = 0) : base(parent, index)
+        {
+            Data = data;
+        }
 
-
-	}
+        public override int Depth()
+        {
+            return 1;
+        }
+    }
 }
 
