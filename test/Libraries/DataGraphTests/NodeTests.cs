@@ -248,6 +248,47 @@ namespace DataGraphTests
             Assert.Pass();
         }
 
+	    [Test]
+	    public void SuperImposeFromNodeDown_AllGood()
+	    {
+	        var data1 = new[] {arr1, arr1};
+	        var data2 = new[] {0, 1, 2};
+            var node1 = new ArrayNode(data1);
+            Console.WriteLine(PrintData(node1.Data));
+            var node2 = new ArrayNode(data2);
+            ArrayNode.SuperimposeFromNodeDown(node1.Children.First(), node2);
+            Console.WriteLine(PrintData(node1.Data));
+	        var data = node1.GetDataAtLevel(node1.Depth() - 1);
+            Assert.AreEqual(data.First(), 0);
+            Assert.AreEqual(data.Last(), "C");
+        }
+
+        [Test]
+        public void SuperImposeFromNodeDown_SuperimposeStartsWithLeaf_ThrowsException()
+        {
+            var data1 = new[] { arr1, arr1 };
+            var data2 = 0;
+            var node1 = new ArrayNode(data1);
+            Console.WriteLine(PrintData(node1.Data));
+            var node2 = new LeafNode(data2);
+            Assert.Throws<Exception>(() => ArrayNode.SuperimposeFromNodeDown(node1.Children.First(), node2));
+        }
+
+        [Test]
+        public void SuperImposeFromNodeDown_SuperimposeReplacesLeafWithArray()
+        {
+            var data1 = new[] { arr1, arr1 };
+            var data2 = new ArrayList(){ 0, 1, new [] {2,3} };
+            var node1 = new ArrayNode(data1);
+            Console.WriteLine(PrintData(node1.Data));
+            var node2 = new ArrayNode(data2);
+            ArrayNode.SuperimposeFromNodeDown(node1.Children.First(), node2);
+            Console.WriteLine(PrintData(node1.Data));
+            var data = node1.GetDataAtLevel(node1.Depth() - 1);
+            Assert.AreEqual(data.First(), 0);
+            Assert.AreEqual(data.Last(), "C");
+        }
+
         private IEnumerable SingleDimensionalTestArray(){
 			return arr1;
 		}
@@ -279,7 +320,7 @@ namespace DataGraphTests
 
 		private string PrintData(object data){
 			var jsonString = JsonConvert.SerializeObject (
-				data, Formatting.Indented);
+				data, Formatting.Indented, new JsonSerializerSettings() {ReferenceLoopHandling = ReferenceLoopHandling.Ignore});
 			return jsonString;
 		}
 	}

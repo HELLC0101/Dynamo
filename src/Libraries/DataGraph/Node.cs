@@ -229,11 +229,6 @@ namespace DataGraph
             var index = children.IndexOf(foundNode);
             children[index] = newNode;
 
-            if (newNode.Parent != null)
-            {
-                newNode.Parent.RemoveChild(this);
-            }
-
             newNode.Parent = this;
             newNode.Level = newNode.Parent.Level + 1;
         }
@@ -333,9 +328,57 @@ namespace DataGraph
             }
         }
 
-        public void SuperimposeFromLevelDown(Node superimpose, int level)
+        public static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
         {
-            
+            var leafNode = startingNode as LeafNode;
+            var superimposeLeaf = nodeToSuperimpose as LeafNode;
+
+            if (leafNode != null)
+            {
+                if (superimposeLeaf != null)
+                {
+                    // If the superimpose node is a leaf node too
+                    // then just take its data. 
+                    leafNode.SetData(superimposeLeaf.Data);
+                    return;
+                }
+                else
+                {
+                    // We've got an array node in the superimposition.
+                    // We need to swap out the leaf node in the original
+                    // tree for an array node.
+                    leafNode.Parent.ReplaceChild(leafNode, nodeToSuperimpose);
+                    return;
+                }
+            }
+
+            var startingArrNode = startingNode as ArrayNode;
+
+            // If the starting node is an array node and the superimpose
+            // node is a leaf - throw an exception
+            if (superimposeLeaf != null)
+            {
+                throw new Exception("We can't superimpose a leaf onto an array.");
+            }
+
+            var superimposeArrNode = nodeToSuperimpose as ArrayNode;
+
+            for (var i = 0; i < startingArrNode.Children.Count(); i++)
+            {
+                if (i >= superimposeArrNode.Children.Count())
+                {
+                    // The superimpose node doesn't have any 
+                    // more data.
+                    return;
+                }
+
+                // Set the cursor at the new starting location
+                var newStartingNode = startingArrNode.Children.ElementAt(i);
+                var newSuperimposeNode = superimposeArrNode.Children.ElementAt(i);
+
+                // Recurse down the tree superimposing as you go!
+                SuperimposeFromNodeDown(newStartingNode, newSuperimposeNode);
+            }
         }
 
         private IEnumerable<object> ToEnumerable()
