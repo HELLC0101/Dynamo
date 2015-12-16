@@ -20,19 +20,20 @@ namespace DataGraph
 		public int Level
         {
 			get { return level; }
+            set { level = value; }
 		}
 
 		/// <summary>
 		/// Gets the Node which is the parent of this node.
 		/// </summary>
 		/// <value>A node, or null if the node is a root node.</value>
-		public Node Parent{ get; internal set; }
+		public ArrayNode Parent{ get; internal set; }
 
         public abstract object Data { get; }
 
         public uint Index { get { return index; } }
 
-		internal Node(Node parent = null, uint index = 0)
+		internal Node(ArrayNode parent = null, uint index = 0)
         {
 			Parent = parent;
 		    level = parent != null ? parent.level + 1 : 0;
@@ -44,12 +45,6 @@ namespace DataGraph
         /// </summary>
         /// <returns>The depth.</returns>
 	    public abstract int Depth();
-
-	    public void UpdateParent(Node newParent)
-	    {
-	        Parent = newParent;
-	        level = Parent.Level + 1;
-	    }
 	}
 
     /// <summary>
@@ -59,7 +54,7 @@ namespace DataGraph
     {
         private readonly List<Node> children = new List<Node>();
 
-        public ArrayNode(IEnumerable data, Node parent = null, uint index = 0) : base(parent, index)
+        public ArrayNode(IEnumerable data, ArrayNode parent = null, uint index = 0) : base(parent, index)
         {
             uint count = 0;
             foreach (var item in data)
@@ -232,23 +227,67 @@ namespace DataGraph
                 throw new Exception("The specified node could not be found in the parent's collection.");
             }
             var index = children.IndexOf(foundNode);
-            children.Remove(existingNode);
-            children.Insert(index, newNode);
-            newNode.UpdateParent(this);
+            children[index] = newNode;
+
+            if (newNode.Parent != null)
+            {
+                newNode.Parent.RemoveChild(this);
+            }
+
+            newNode.Parent = this;
+            newNode.Level = newNode.Parent.Level + 1;
+        }
+
+        private void ReplaceChildAtIndex(int index, Node newNode)
+        {
+            var childToReplace = children[index];
+            ReplaceChild(childToReplace, newNode);
+        }
+
+        internal void RemoveChild(Node nodeToRemove)
+        {
+            children.Remove(nodeToRemove);
+        }
+
+        internal void AddChild(Node node)
+        {
+            children.Add(node);
+            node.Parent = this;
+            node.Level = Level + 1;
         }
 
         /// <summary>
-        /// Null all nodes at the specified level.
+        /// Sets any leaf node at the specified level to null
+        /// then traverses down the tree setting all leaf
+        /// nodes to null.
         /// </summary>
-        public void NullAtLevel(int level)
+        public void NullAtLevelAndBelow(int level)
         {
             var nodesAtLevel = new List<Node>();
             GetNodesAtLevel(this, ref nodesAtLevel, level);
 
             foreach (var n in nodesAtLevel)
             {
-                var parent = (ArrayNode) n.Parent;
-                parent.ReplaceChild(n, new LeafNode(null, parent, n.Index));
+                TraverseDownAndSetDataAtLeaf(n, null);
+            }
+        }
+
+        internal static void TraverseDownAndSetDataAtLeaf(Node n, object data)
+        {
+            var leafNode = n as LeafNode;
+            if (leafNode != null)
+            {
+                leafNode.SetData(data);
+                return;
+            }
+
+            var arrayNode = n as ArrayNode;
+            if (arrayNode != null)
+            {
+                foreach (var c in arrayNode.Children)
+                {
+                    TraverseDownAndSetDataAtLeaf(c, data);
+                }
             }
         }
 
@@ -261,20 +300,42 @@ namespace DataGraph
             var nodesAtLevel = new List<Node>();
             GetNodesAtLevel(this, ref nodesAtLevel, level);
 
-            var overwriteNodes = new List<Node>();
-            GetNodesAtLevel(overwriteNode, ref overwriteNodes, 1);
+            // Get a collection of the parents to nodes at this level.
+            // We do this lookup from the leaves to ensure that we only get
+            // the parent nodes which correspond with the nodes at this level
+            // and not all of the nodes at the level above.
+            var nodeParents = nodesAtLevel.Select(n => n.Parent).Distinct().ToList();
 
-            for (var i = 0; i < nodesAtLevel.Count; i++)
+            var overwriteNodes = new List<Node>();
+            GetNodesAtLevel(overwriteNode, ref overwriteNodes, overwriteNode.Depth()-1);
+            var overwriteParents = overwriteNodes.Select(n => n.Parent).Distinct().ToList();
+
+            for (var i = 0; i < nodeParents.Count(); i++)
             {
-                if (i >= overwriteNodes.Count)
+                if (i >= overwriteParents.Count)
                 {
                     break;
                 }
 
-                var nodeToReplace = nodesAtLevel[i];
-                var parentForReplace = (ArrayNode) nodeToReplace.Parent;
-                parentForReplace.ReplaceChild(nodeToReplace, overwriteNodes[i]);
+                var replaceNode = nodeParents[i];
+                for (var j = 0; j < overwriteNodes.Count(); j++)
+                {
+                    var newNode = overwriteNodes[j];
+                    if (j >= replaceNode.Children.Count())
+                    {
+                        replaceNode.AddChild(newNode);
+                    }
+                    else
+                    {
+                        replaceNode.ReplaceChildAtIndex(j, newNode);
+                    }
+                }
             }
+        }
+
+        public void SuperimposeFromLevelDown(Node superimpose, int level)
+        {
+            
         }
 
         private IEnumerable<object> ToEnumerable()
@@ -311,19 +372,26 @@ namespace DataGraph
     /// </summary>
     public class LeafNode : Node
     {
+        private object leafData;
+
         /// <summary>
         /// Gets the data associated with this node.
         /// </summary>
-        public override object Data { get; }
+        public override object Data { get { return leafData; } }
 
-        public LeafNode(object data, Node parent = null, uint index = 0) : base(parent, index)
+        public LeafNode(object data, ArrayNode parent = null, uint index = 0) : base(parent, index)
         {
-            Data = data;
+            leafData = data;
         }
 
         public override int Depth()
         {
             return 1;
+        }
+
+        public void SetData(object newValue)
+        {
+            leafData = newValue;
         }
     }
 }

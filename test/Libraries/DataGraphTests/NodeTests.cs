@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using DataGraph;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Newtonsoft.Json;
 
 namespace DataGraphTests
@@ -156,7 +157,7 @@ namespace DataGraphTests
 	    {
 	        var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevel(1);
+            node.NullAtLevelAndBelow(1);
             Console.WriteLine("Nulled at level 1...");
             Console.WriteLine(PrintData(node.Data));
 	        var leafData = node.GetAllLeafNodes().Select(n => n.Data);
@@ -168,20 +169,32 @@ namespace DataGraphTests
         {
             var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevel(2);
+            node.NullAtLevelAndBelow(2);
             Console.WriteLine("Nulled at level 2...");
             Console.WriteLine(PrintData(node.Data));
             var data = node.GetDataAtLevel(2);
             Assert.True(data.All(d=>d==null));
         }
 
-	    [Test]
+        [Test]
+        public void NullAtLevel_3_ThreeDimensionalArray()
+        {
+            var node = new ArrayNode(ThreeDimensionalTestArray());
+            Console.WriteLine(PrintData(node.Data));
+            node.NullAtLevelAndBelow(3);
+            Console.WriteLine("Nulled at level 3...");
+            Console.WriteLine(PrintData(node.Data));
+            var data = node.GetDataAtLevel(3);
+            Assert.True(data.All(d => d == null));
+        }
+
+        [Test]
 	    public void OverwriteNodesAtLevel_JaggedArray_OverwriteWithSmallerData()
 	    {
 	        var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevel(2);
-	        var data = new[] {"foobar", "foobuzz"};
+            node.NullAtLevelAndBelow(2);
+	        var data = new[] { "foobar", "foobuzz"};
             var newNode = new ArrayNode(data);
             node.OverwriteDataAtLevel(newNode,2);
             Console.WriteLine(PrintData(node.Data));
@@ -193,12 +206,46 @@ namespace DataGraphTests
         {
             var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevel(2);
-            var data = new[] { "foobar", "foobuzz", "foobarbuzz", "foobuzzbar" };
+            node.NullAtLevelAndBelow(2);
+            var data = new[] { new[] { "foobar", "foobuzz"}, new[] {"foobarbuzz", "foobuzzbar"} };
             var newNode = new ArrayNode(data);
             node.OverwriteDataAtLevel(newNode, 2);
             Console.WriteLine(PrintData(node.Data));
             Assert.AreEqual(node.GetDataAtLevel(2).First(), "foobar");
+        }
+
+	    [Test]
+	    public void Phase5()
+	    {
+	        var data1 = new[]
+	        {
+	            new[]
+	            {
+	                new[] {"A", "B", "C"},
+	                new[] {"D", "E", "F"}
+	            },
+	            new[]
+	            {
+	                new[] {"a", "b", "c"},
+	                new[] {"d", "e", "f"}
+	            }
+	        };
+
+            var node1 = new ArrayNode(data1);
+
+            var data2 = new[]
+            {
+                new[]{"A0", "B1"},
+                new[] {"D5", "E6"}
+            };
+
+            var node2 = new ArrayNode(data2);
+
+            Console.WriteLine(PrintData(node1.Data));
+            node1.NullAtLevelAndBelow(2);
+            node1.OverwriteDataAtLevel(node2, 2);
+            Console.WriteLine(PrintData(node1.Data));
+            Assert.Pass();
         }
 
         private IEnumerable SingleDimensionalTestArray(){
