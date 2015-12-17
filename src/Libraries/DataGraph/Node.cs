@@ -110,6 +110,78 @@ namespace DataGraph
                 }
 	        }
 	    }
+
+        /// <summary>
+        /// Gets the data at the specified level from node.
+        /// 
+        ///        [] 	l0
+        ///       / \
+        ///      o  [] 	l1
+        ///        /|\
+        ///       o o o l2
+        /// 
+        /// If the level specified is less than zero, a node is 
+        /// added to the root of the tree.
+        /// 
+        /// </summary>
+        /// <returns>The data at level from node.</returns>
+        /// <param name="root">The node from which the data gathering will begin.</param>
+        /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
+        public static IEnumerable<object> GetDataAtLevel(Node node, int level)
+        {
+            if (level >= node.Depth())
+            {
+                throw new Exception("You cannot specify a level deeper than the depth of the tree.");
+            }
+
+            var nodes = new List<Node>();
+            GetNodesAtLevel(node, ref nodes, level);
+            return nodes.Select(n => n.Data);
+        }
+
+	    /// <summary>
+	    /// Get all the nodes at the specified level, starting at the specified node.
+	    /// 
+	    /// If the level specified is a negative number then the root node will be replaced
+	    /// with an additional root node.
+	    /// </summary>
+	    internal static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level)
+	    {
+	        while (true)
+	        {
+	            if (node.Level == level)
+	            {
+	                gatheredNodes.Add(node);
+	                return;
+	            }
+
+	            if (level < 0)
+	            {
+	                var count = 0;
+	                var currentRoot = node;
+	                while (count > level)
+	                {
+	                    var newNode = new ArrayNode(new[] { currentRoot.Data });
+	                    currentRoot.Parent = newNode;
+	                    currentRoot = newNode;
+	                    count = count - 1;
+	                }
+	                gatheredNodes.Add(currentRoot);
+	                return;
+	            }
+
+	            if (node is ArrayNode)
+	            {
+	                var arrNode = (ArrayNode)node;
+	                foreach (var n in arrNode.Children)
+	                {
+	                    GetNodesAtLevel(n, ref gatheredNodes, level);
+	                }
+	            }
+
+	            break;
+	        }
+	    }
 	}
 
     /// <summary>
@@ -171,78 +243,6 @@ namespace DataGraph
         {
             var nodes = GetAllLeafNodes();
             return nodes.Max(n => n.Level + 1);
-        }
-
-        /// <summary>
-        /// Gets the data at the specified level from node.
-        /// 
-        ///        [] 	l0
-        ///       / \
-        ///      o  [] 	l1
-        ///        /|\
-        ///       o o o l2
-        /// 
-        /// If the level specified is less than zero, a node is 
-        /// added to the root of the tree.
-        /// 
-        /// </summary>
-        /// <returns>The data at level from node.</returns>
-        /// <param name="root">The node from which the data gathering will begin.</param>
-        /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
-        public IEnumerable<object> GetDataAtLevel(int level)
-        {
-            if (level >= Depth())
-            {
-                throw new Exception("You cannot specify a level deeper than the depth of the tree.");
-            }
-
-            var nodes = new List<Node>();
-            GetNodesAtLevel(this, ref nodes, level);
-            return nodes.Select(n => n.Data);
-        }
-
-        /// <summary>
-        /// Get all the nodes at the specified level, starting at the specified node.
-        /// 
-        /// If the level specified is a negative number then the root node will be replaced
-        /// with an additional root node.
-        /// </summary>
-        private static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level)
-        {
-            while (true)
-            {
-                if (node.Level == level)
-                {
-                    gatheredNodes.Add(node);
-                    return;
-                }
-
-                if (level < 0)
-                {
-                    var count = 0;
-                    var currentRoot = node;
-                    while (count > level)
-                    {
-                        var newNode = new ArrayNode(new[] {currentRoot.Data});
-                        currentRoot.Parent = newNode;
-                        currentRoot = newNode;
-                        count = count - 1;
-                    }
-                    gatheredNodes.Add(currentRoot);
-                    return;
-                }
-
-                if (node is ArrayNode)
-                {
-                    var arrNode = (ArrayNode) node;
-                    foreach (var n in arrNode.children)
-                    {
-                        GetNodesAtLevel(n, ref gatheredNodes, level);
-                    }
-                }
-
-                break;
-            }
         }
 
         /// <summary>
