@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -296,17 +295,6 @@ namespace DataGraph
 
             newNode.Parent = this;
             newNode.Level = newNode.Parent.Level + 1;
-        }
-
-        private void ReplaceChildAtIndex(int index, Node newNode)
-        {
-            var childToReplace = children[index];
-            ReplaceChild(childToReplace, newNode);
-        }
-
-        internal void RemoveChild(Node nodeToRemove)
-        {
-            children.Remove(nodeToRemove);
         }
 
         internal void AddChild(Node node)
