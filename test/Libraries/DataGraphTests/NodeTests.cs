@@ -157,10 +157,10 @@ namespace DataGraphTests
 	    {
 	        var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevelAndBelow(1);
+            var nulledNode = Node.NullAtLevelAndBelow(node, 1);
             Console.WriteLine("Nulled at level 1...");
-            Console.WriteLine(PrintData(node.Data));
-	        var leafData = node.GetAllLeafNodes().Select(n => n.Data);
+            Console.WriteLine(PrintData(nulledNode.Data));
+	        var leafData = nulledNode.GetAllLeafNodes().Select(n => n.Data);
             Assert.True(leafData.All(d=>d==null));
 	    }
 
@@ -169,10 +169,10 @@ namespace DataGraphTests
         {
             var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevelAndBelow(2);
+            var nulledNode = Node.NullAtLevelAndBelow(node, 2);
             Console.WriteLine("Nulled at level 2...");
-            Console.WriteLine(PrintData(node.Data));
-            var data = Node.GetDataAtLevel(node, 2);
+            Console.WriteLine(PrintData(nulledNode.Data));
+            var data = Node.GetDataAtLevel(nulledNode, 2);
             Assert.True(data.All(d=>d==null));
         }
 
@@ -181,10 +181,10 @@ namespace DataGraphTests
         {
             var node = new ArrayNode(ThreeDimensionalTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevelAndBelow(3);
+            var nulledNode = Node.NullAtLevelAndBelow(node, 3);
             Console.WriteLine("Nulled at level 3...");
-            Console.WriteLine(PrintData(node.Data));
-            var data = Node.GetDataAtLevel(node, 3);
+            Console.WriteLine(PrintData(nulledNode.Data));
+            var data = Node.GetDataAtLevel(nulledNode, 3);
             Assert.True(data.All(d => d == null));
         }
 
@@ -193,12 +193,12 @@ namespace DataGraphTests
 	    {
 	        var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevelAndBelow(2);
+            var nulledNode = Node.NullAtLevelAndBelow(node, 2);
 	        var data = new[] { "foobar", "foobuzz"};
             var newNode = new ArrayNode(data);
-            node.OverwriteDataAtLevel(newNode,2);
-            Console.WriteLine(PrintData(node.Data));
-	        Assert.AreEqual(Node.GetDataAtLevel(node, 2).First(), "foobar");
+            nulledNode.OverwriteDataAtLevel(newNode,2);
+            Console.WriteLine(PrintData(nulledNode.Data));
+	        Assert.AreEqual(Node.GetDataAtLevel(nulledNode, 2).First(), "foobar");
 	    }
 
         [Test]
@@ -206,12 +206,12 @@ namespace DataGraphTests
         {
             var node = new ArrayNode(JaggedTestArray());
             Console.WriteLine(PrintData(node.Data));
-            node.NullAtLevelAndBelow(2);
+            var nulledNode = Node.NullAtLevelAndBelow(node, 2);
             var data = new[] { "foobar", "foobuzz", "foobarbuzz", "foobuzzbar" };
             var newNode = new ArrayNode(data);
-            node.OverwriteDataAtLevel(newNode, 2);
-            Console.WriteLine(PrintData(node.Data));
-            Assert.AreEqual(Node.GetDataAtLevel(node, 2).First(), "foobar");
+            nulledNode.OverwriteDataAtLevel(newNode, 2);
+            Console.WriteLine(PrintData(nulledNode.Data));
+            Assert.AreEqual(Node.GetDataAtLevel(nulledNode, 2).First(), "foobar");
         }
 
 	    [Test]
@@ -242,9 +242,9 @@ namespace DataGraphTests
             var node2 = new ArrayNode(data2);
 
             Console.WriteLine(PrintData(node1.Data));
-            node1.NullAtLevelAndBelow(2);
-            node1.OverwriteDataAtLevel(node2, 2);
-            Console.WriteLine(PrintData(node1.Data));
+            var nulledNode = Node.NullAtLevelAndBelow(node1, 2);
+            nulledNode.OverwriteDataAtLevel(node2, 2);
+            Console.WriteLine(PrintData(nulledNode.Data));
             Assert.Pass();
         }
 

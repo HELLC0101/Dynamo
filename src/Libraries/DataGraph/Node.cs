@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Autodesk.DesignScript.Runtime;
 
 namespace DataGraph
 {
@@ -31,8 +32,6 @@ namespace DataGraph
 
         public abstract object Data { get; }
 
-        public uint Index { get { return index; } }
-
 		internal Node(ArrayNode parent = null, uint index = 0)
         {
 			Parent = parent;
@@ -46,7 +45,7 @@ namespace DataGraph
         /// <returns>The depth.</returns>
 	    public abstract int Depth();
 
-	    public static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
+	    internal static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
 	    {
 	        var leafNode = startingNode as LeafNode;
 	        var superimposeLeaf = nodeToSuperimpose as LeafNode;
@@ -108,6 +107,21 @@ namespace DataGraph
                     SuperimposeFromNodeDown(newStartingNode, newSuperimposeNode);
                 }
 	        }
+	    }
+
+	    public static IEnumerable<object> GetDataAtLevel([ArbitraryDimensionArrayImport]object data, int level)
+	    {
+	        Node node;
+	        var enumerable = data as IEnumerable;
+	        if (enumerable != null && enumerable.GetType() != typeof (string))
+	        {
+	            node = new ArrayNode(enumerable);
+	        }
+	        else
+	        {
+	            node = new LeafNode(data);
+	        }
+	        return Node.GetDataAtLevel(node, node.Depth()+level);
 	    }
 
         /// <summary>
@@ -180,6 +194,25 @@ namespace DataGraph
 
 	            break;
 	        }
+	    }
+
+	    /// <summary>
+	    /// Clones the provided node and sets any leaf node at the specified 
+	    /// level to null, then traverses down the tree setting all leaf
+	    /// nodes to null.
+	    /// </summary>
+	    public static ArrayNode NullAtLevelAndBelow(ArrayNode node, int level)
+	    {
+            // Clone the node.
+	        var newNode = new ArrayNode((IEnumerable)node.Data);
+
+            var nodesAtLevel = new List<Node>();
+            GetNodesAtLevel(newNode, ref nodesAtLevel, level);
+            foreach (var n in nodesAtLevel)
+            {
+                ArrayNode.TraverseDownAndSetDataAtLeaf(n, null);
+            }
+	        return newNode;
 	    }
 	}
 
@@ -302,22 +335,6 @@ namespace DataGraph
             children.Add(node);
             node.Parent = this;
             node.Level = Level + 1;
-        }
-
-        /// <summary>
-        /// Sets any leaf node at the specified level to null
-        /// then traverses down the tree setting all leaf
-        /// nodes to null.
-        /// </summary>
-        public void NullAtLevelAndBelow(int level)
-        {
-            var nodesAtLevel = new List<Node>();
-            GetNodesAtLevel(this, ref nodesAtLevel, level);
-
-            foreach (var n in nodesAtLevel)
-            {
-                TraverseDownAndSetDataAtLeaf(n, null);
-            }
         }
 
         internal static void TraverseDownAndSetDataAtLeaf(Node n, object data)
