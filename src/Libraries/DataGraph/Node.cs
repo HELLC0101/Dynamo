@@ -6,10 +6,11 @@ using Autodesk.DesignScript.Runtime;
 
 namespace DataGraph
 {
-	/// <summary>
-	/// Base class for all Node classes.
-	/// </summary>
-	public abstract class Node
+    /// <summary>
+    /// Base class for all Node classes.
+    /// </summary>
+    [IsVisibleInDynamoLibrary(false)]
+    public abstract class Node
 	{
 	    private int level = 0;
 	    private uint index = 0;
@@ -44,181 +45,12 @@ namespace DataGraph
         /// </summary>
         /// <returns>The depth.</returns>
 	    public abstract int Depth();
-
-	    internal static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
-	    {
-	        var leafNode = startingNode as LeafNode;
-	        var superimposeLeaf = nodeToSuperimpose as LeafNode;
-
-	        if (leafNode != null)
-	        {
-	            if (superimposeLeaf != null)
-	            {
-	                // If the superimpose node is a leaf node too
-	                // then just take its data. 
-	                leafNode.SetData(superimposeLeaf.Data);
-	                return;
-	            }
-	            else
-	            {
-	                // We've got an array node in the superimposition.
-	                // We need to swap out the leaf node in the original
-	                // tree for an array node.
-	                leafNode.Parent.ReplaceChild(leafNode, nodeToSuperimpose);
-	                return;
-	            }
-	        }
-
-	        var startingArrNode = startingNode as ArrayNode;
-
-	        // If the starting node is an array node and the superimpose
-	        // node is a leaf - throw an exception
-	        if (superimposeLeaf != null)
-	        {
-	            throw new Exception("We can't superimpose a leaf onto an array.");
-	        }
-
-	        var superimposeArrNode = nodeToSuperimpose as ArrayNode;
-
-	        var width = Math.Max(startingArrNode.Children.Count(), superimposeArrNode.Children.Count());
-
-	        for (var i = 0; i < width; i++)
-	        {
-	            if (i >= superimposeArrNode.Children.Count())
-	            {
-	                // The superimpose node doesn't have any 
-	                // more data.
-	                return;
-	            }
-
-                var newSuperimposeNode = superimposeArrNode.Children.ElementAt(i);
-                if (i >= startingArrNode.Children.Count())
-	            {
-                    // If we have more to superimpose than we
-                    // have slots allowed, add the node.
-                    startingArrNode.AddChild(newSuperimposeNode);
-	            }
-	            else
-	            {
-                    // Set the cursor at the new starting location
-                    var newStartingNode = startingArrNode.Children.ElementAt(i);
-
-                    // Recurse down the tree superimposing as you go!
-                    SuperimposeFromNodeDown(newStartingNode, newSuperimposeNode);
-                }
-	        }
-	    }
-
-	    public static IEnumerable<object> GetDataAtLevel([ArbitraryDimensionArrayImport]object data, int level)
-	    {
-	        Node node;
-	        var enumerable = data as IEnumerable;
-	        if (enumerable != null && enumerable.GetType() != typeof (string))
-	        {
-	            node = new ArrayNode(enumerable);
-	        }
-	        else
-	        {
-	            node = new LeafNode(data);
-	        }
-	        return Node.GetDataAtLevel(node, node.Depth()+level);
-	    }
-
-        /// <summary>
-        /// Gets the data at the specified level from node.
-        /// 
-        ///        [] 	l0
-        ///       / \
-        ///      o  [] 	l1
-        ///        /|\
-        ///       o o o l2
-        /// 
-        /// If the level specified is less than zero, a node is 
-        /// added to the root of the tree.
-        /// 
-        /// </summary>
-        /// <returns>The data at level from node.</returns>
-        /// <param name="root">The node from which the data gathering will begin.</param>
-        /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
-        public static IEnumerable<object> GetDataAtLevel(Node node, int level)
-        {
-            if (level >= node.Depth())
-            {
-                throw new Exception("You cannot specify a level deeper than the depth of the tree.");
-            }
-
-            var nodes = new List<Node>();
-            GetNodesAtLevel(node, ref nodes, level);
-            return nodes.Select(n => n.Data);
-        }
-
-	    /// <summary>
-	    /// Get all the nodes at the specified level, starting at the specified node.
-	    /// 
-	    /// If the level specified is a negative number then the root node will be replaced
-	    /// with an additional root node.
-	    /// </summary>
-	    internal static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level)
-	    {
-	        while (true)
-	        {
-	            if (node.Level == level)
-	            {
-	                gatheredNodes.Add(node);
-	                return;
-	            }
-
-	            if (level < 0)
-	            {
-	                var count = 0;
-	                var currentRoot = node;
-	                while (count > level)
-	                {
-	                    var newNode = new ArrayNode(new[] { currentRoot.Data });
-	                    currentRoot.Parent = newNode;
-	                    currentRoot = newNode;
-	                    count = count - 1;
-	                }
-	                gatheredNodes.Add(currentRoot);
-	                return;
-	            }
-
-	            if (node is ArrayNode)
-	            {
-	                var arrNode = (ArrayNode)node;
-	                foreach (var n in arrNode.Children)
-	                {
-	                    GetNodesAtLevel(n, ref gatheredNodes, level);
-	                }
-	            }
-
-	            break;
-	        }
-	    }
-
-	    /// <summary>
-	    /// Clones the provided node and sets any leaf node at the specified 
-	    /// level to null, then traverses down the tree setting all leaf
-	    /// nodes to null.
-	    /// </summary>
-	    public static ArrayNode NullAtLevelAndBelow(ArrayNode node, int level)
-	    {
-            // Clone the node.
-	        var newNode = new ArrayNode((IEnumerable)node.Data);
-
-            var nodesAtLevel = new List<Node>();
-            GetNodesAtLevel(newNode, ref nodesAtLevel, level);
-            foreach (var n in nodesAtLevel)
-            {
-                ArrayNode.TraverseDownAndSetDataAtLeaf(n, null);
-            }
-	        return newNode;
-	    }
 	}
 
     /// <summary>
     /// A node which represents an array.
     /// </summary>
+    [IsVisibleInDynamoLibrary(false)]
     public class ArrayNode : Node
     {
         private readonly List<Node> children = new List<Node>();
@@ -356,36 +188,6 @@ namespace DataGraph
             }
         }
 
-        /// <summary>
-        /// Overwrite the data at the specified level with the nodes
-        /// from the overwriteNode.
-        /// </summary>
-        public void OverwriteDataAtLevel(Node overwriteNode, int level)
-        {
-            var nodesAtLevel = new List<Node>();
-            GetNodesAtLevel(this, ref nodesAtLevel, level);
-
-            // Get a collection of the parents to nodes at this level.
-            // We do this lookup from the leaves to ensure that we only get
-            // the parent nodes which correspond with the nodes at this level
-            // and not all of the nodes at the level above.
-            var nodeParents = nodesAtLevel.Select(n => n.Parent).Distinct().ToList();
-
-            var overwriteNodes = new List<Node>();
-            GetNodesAtLevel(overwriteNode, ref overwriteNodes, 1);
-            var overwriteParents = overwriteNodes.Select(n => n.Parent).Distinct().ToList();
-            
-            for (var i = 0; i < nodeParents.Count(); i++)
-            {
-                if (i >= overwriteParents.Count())
-                {
-                    break;
-                }
-
-                SuperimposeFromNodeDown(nodeParents[i], overwriteParents.ElementAt(i));
-            }
-        }
-
         private IEnumerable<object> ToEnumerable()
         {
             var result = new List<object>();
@@ -418,6 +220,7 @@ namespace DataGraph
     /// <summary>
     /// A node which represents a piece of data.
     /// </summary>
+    [IsVisibleInDynamoLibrary(false)]
     public class LeafNode : Node
     {
         private object leafData;
@@ -441,6 +244,266 @@ namespace DataGraph
         {
             leafData = newValue;
         }
+    }
+
+    public static class DataGraph
+    {
+        /// <summary>
+        /// Given a collection of data, a tree is built. The tree is overwritten with nulls from the specified level down. 
+        /// Then the tree is then superimposed with data from the second collection, starting at the specified level.
+        /// </summary>
+        /// <param name="data">The base data which will be overwritten.</param>
+        /// <param name="superimposeData">The data which will overwrite.</param>
+        /// <param name="level">The level at which to begin the overwrite, specified from the leaves, starting at -1.</param>
+        /// <param name="overwriteLowerLevelsWithNulls">If True, data at the specified level and below will be overwritten with nulls.</param>
+        public static object SuperimposeDataAtLevel([ArbitraryDimensionArrayImport]object data, [ArbitraryDimensionArrayImport]object superimposeData, 
+            int level, bool overwriteLowerLevelsWithNulls = true)
+        {
+            // Clone the node.
+            var baseNode = FromData(data);
+            var convertedLevel = baseNode.Depth() + level;
+
+            if (overwriteLowerLevelsWithNulls)
+            {
+                // Null the data at the level and below.
+                NullAtLevelAndBelow(baseNode, convertedLevel);
+            }
+
+            // Superimpose new data on the node.
+            var superimposeNode = FromData(superimposeData);
+            OverwriteDataAtLevel(baseNode, superimposeNode, convertedLevel);
+
+            return baseNode.Data;
+        }
+
+        /// <summary>
+        /// Constructs a tree of the specified data, then gets a collection 
+        /// containing all the data at the specified level.
+        /// </summary>
+        /// <param name="data">An object representing the data.</param>
+        /// <param name="level">A level specified from the leaves starting at -1.</param>
+        /// <returns></returns>
+        public static IEnumerable<object> GetDataAtLevel([ArbitraryDimensionArrayImport]object data, int level)
+        {
+            var node = FromData(data);
+            return GetDataAtLevel(node, node.Depth() + level);
+        }
+
+        #region internal methods
+
+        /// <summary>
+        /// Create a Data Graph Node from data.
+        /// </summary>
+        /// <param name="data">The data to construct the node.</param>
+        /// <returns>A LeafNode if the object is singular and an ArrayNode if the object is a collection.</returns>
+        private static Node FromData([ArbitraryDimensionArrayImport] object data)
+        {
+            Node node;
+            var enumerable = data as IEnumerable;
+            if (enumerable != null && enumerable.GetType() != typeof(string))
+            {
+                node = new ArrayNode(enumerable);
+            }
+            else
+            {
+                node = new LeafNode(data);
+            }
+
+            return node;
+        }
+
+        /// <summary>
+        /// Clone a node.
+        /// </summary>
+        /// <param name="node">The node to clone.</param>
+        /// <returns>A Node.</returns>
+        private static Node FromNode(Node node)
+        {
+            return FromData(node.Data);
+        }
+
+        /// <summary>
+        /// Gets the data at the specified level from node.
+        /// 
+        ///        [] 	l0
+        ///       / \
+        ///      o  [] 	l1
+        ///        /|\
+        ///       o o o l2
+        /// 
+        /// If the level specified is less than zero, a node is 
+        /// added to the root of the tree.
+        /// 
+        /// </summary>
+        /// <returns>The data at level from node.</returns>
+        /// <param name="root">The node from which the data gathering will begin.</param>
+        /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
+        internal static IEnumerable<object> GetDataAtLevel(Node node, int level)
+        {
+            if (level >= node.Depth())
+            {
+                throw new Exception("You cannot specify a level deeper than the depth of the tree.");
+            }
+
+            var nodes = new List<Node>();
+            GetNodesAtLevel(node, ref nodes, level);
+            return nodes.Select(n => n.Data);
+        }
+
+        /// <summary>
+        /// Get all the nodes at the specified level, starting at the specified node.
+        /// 
+        /// If the level specified is a negative number then the root node will be replaced
+        /// with an additional root node.
+        /// </summary>
+        internal static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level)
+        {
+            while (true)
+            {
+                if (node.Level == level)
+                {
+                    gatheredNodes.Add(node);
+                    return;
+                }
+
+                if (level < 0)
+                {
+                    var count = 0;
+                    var currentRoot = node;
+                    while (count > level)
+                    {
+                        var newNode = new ArrayNode(new[] { currentRoot.Data });
+                        currentRoot.Parent = newNode;
+                        currentRoot = newNode;
+                        count = count - 1;
+                    }
+                    gatheredNodes.Add(currentRoot);
+                    return;
+                }
+
+                if (node is ArrayNode)
+                {
+                    var arrNode = (ArrayNode)node;
+                    foreach (var n in arrNode.Children)
+                    {
+                        GetNodesAtLevel(n, ref gatheredNodes, level);
+                    }
+                }
+
+                break;
+            }
+        }
+
+        /// <summary>
+        /// Sets any leaf node at the specified 
+        /// level to null, then traverses down the tree setting all leaf
+        /// nodes to null.
+        /// </summary>
+        internal static void NullAtLevelAndBelow(Node node, int level)
+        {
+            var nodesAtLevel = new List<Node>();
+            GetNodesAtLevel(node, ref nodesAtLevel, level);
+            foreach (var n in nodesAtLevel)
+            {
+                ArrayNode.TraverseDownAndSetDataAtLeaf(n, null);
+            }
+        }
+
+        /// <summary>
+        /// Overwrite the data at the specified level with the nodes
+        /// from the overwriteNode.
+        /// </summary>
+        internal static void OverwriteDataAtLevel(Node node, Node overwriteNode, int level)
+        {
+            var nodesAtLevel = new List<Node>();
+            GetNodesAtLevel(node, ref nodesAtLevel, level);
+
+            // Get a collection of the parents to nodes at this level.
+            // We do this lookup from the leaves to ensure that we only get
+            // the parent nodes which correspond with the nodes at this level
+            // and not all of the nodes at the level above.
+            var nodeParents = nodesAtLevel.Select(n => n.Parent).Distinct().ToList();
+
+            var overwriteNodes = new List<Node>();
+            GetNodesAtLevel(overwriteNode, ref overwriteNodes, (int) 1);
+            var overwriteParents = overwriteNodes.Select(n => n.Parent).Distinct().ToList();
+
+            for (var i = 0; i < nodeParents.Count(); i++)
+            {
+                if (i >= overwriteParents.Count())
+                {
+                    break;
+                }
+
+                DataGraph.SuperimposeFromNodeDown(nodeParents[i], overwriteParents.ElementAt(i));
+            }
+        }
+
+        internal static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
+        {
+            var leafNode = startingNode as LeafNode;
+            var superimposeLeaf = nodeToSuperimpose as LeafNode;
+
+            if (leafNode != null)
+            {
+                if (superimposeLeaf != null)
+                {
+                    // If the superimpose node is a leaf node too
+                    // then just take its data. 
+                    leafNode.SetData(superimposeLeaf.Data);
+                    return;
+                }
+                else
+                {
+                    // We've got an array node in the superimposition.
+                    // We need to swap out the leaf node in the original
+                    // tree for an array node.
+                    leafNode.Parent.ReplaceChild(leafNode, nodeToSuperimpose);
+                    return;
+                }
+            }
+
+            var startingArrNode = startingNode as ArrayNode;
+
+            // If the starting node is an array node and the superimpose
+            // node is a leaf - throw an exception
+            if (superimposeLeaf != null)
+            {
+                throw new Exception("The requested operation would cause the replacement of an array node with a leaf node. This is not supported.");
+            }
+
+            var superimposeArrNode = nodeToSuperimpose as ArrayNode;
+
+            var width = Math.Max(startingArrNode.Children.Count(), superimposeArrNode.Children.Count());
+
+            for (var i = 0; i < width; i++)
+            {
+                if (i >= superimposeArrNode.Children.Count())
+                {
+                    // The superimpose node doesn't have any 
+                    // more data.
+                    return;
+                }
+
+                var newSuperimposeNode = superimposeArrNode.Children.ElementAt(i);
+                if (i >= startingArrNode.Children.Count())
+                {
+                    // If we have more to superimpose than we
+                    // have slots allowed, add the node.
+                    startingArrNode.AddChild(newSuperimposeNode);
+                }
+                else
+                {
+                    // Set the cursor at the new starting location
+                    var newStartingNode = startingArrNode.Children.ElementAt(i);
+
+                    // Recurse down the tree superimposing as you go!
+                    SuperimposeFromNodeDown(newStartingNode, newSuperimposeNode);
+                }
+            }
+        }
+
+        #endregion
     }
 }
 
