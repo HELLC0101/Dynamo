@@ -75,7 +75,7 @@ namespace DataGraphTests
 			var data = DataGraph.DataGraph.GetDataAtLevel (node, 1);
 			Console.WriteLine ("@-2");
 			Console.WriteLine (PrintData (data));
-            Assert.AreEqual(data.First(), "foo");
+            Assert.AreEqual(data[0], "foo");
 		}
 
 		[Test]
@@ -84,9 +84,9 @@ namespace DataGraphTests
 			Console.WriteLine (PrintData (node.Data));
 			var data = DataGraph.DataGraph.GetDataAtLevel(node, 3);
 			Console.WriteLine ("@-1");
-			Assert.AreEqual (data.First (), "a");
+			Assert.AreEqual (data[0], "a");
 			Console.WriteLine (PrintData (data));
-			Assert.AreEqual (data.Last (), "c");
+			Assert.AreEqual (data[data.Count-1], "c");
 		}
 
 		[Test]
@@ -95,9 +95,9 @@ namespace DataGraphTests
 			Console.WriteLine (PrintData (node.Data));
 			var data = DataGraph.DataGraph.GetDataAtLevel(node, 2);
 			Console.WriteLine ("@-1");
-			Assert.AreEqual (data.First (), arr1.First ());
+			Assert.AreEqual (data[0], arr1.First ());
 			Console.WriteLine (PrintData (data));
-			Assert.AreEqual (data.Last (), arr2.Last ());
+			Assert.AreEqual (data[data.Count-1], arr2.Last ());
 		}
 
 		[Test]
@@ -132,16 +132,16 @@ namespace DataGraphTests
 			var node = new ArrayNode (Phase2 ());
 
 			var data = DataGraph.DataGraph.GetDataAtLevel(node, 0);
-			Assert.AreEqual (data.Count (), 1);
-
+			Assert.AreEqual (data.Count, 1);
+            
 			data = DataGraph.DataGraph.GetDataAtLevel(node, 1);
-			Assert.AreEqual (data.Count (), 2);
+			Assert.AreEqual (data.Count, 2);
 
             data = DataGraph.DataGraph.GetDataAtLevel(node, 2);
-            Assert.AreEqual(data.Count(), 4);
+            Assert.AreEqual(data.Count, 4);
 
             data = DataGraph.DataGraph.GetDataAtLevel(node, 3);
-			Assert.AreEqual (data.Count (), 12);
+			Assert.AreEqual (data.Count, 12);
 		}
 
 		[Test]
@@ -172,7 +172,10 @@ namespace DataGraphTests
             Console.WriteLine("Nulled at level 2...");
             Console.WriteLine(PrintData(node.Data));
             var data = DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 2);
-            Assert.True(data.All(d=>d==null));
+            foreach (var d in data)
+            {
+                Assert.True(d == null);
+            }
         }
 
         [Test]
@@ -184,7 +187,10 @@ namespace DataGraphTests
             Console.WriteLine("Nulled at level 3...");
             Console.WriteLine(PrintData(node.Data));
             var data = DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 3);
-            Assert.True(data.All(d => d == null));
+            foreach (var d in data)
+            {
+                Assert.True(d == null);
+            }
         }
 
         [Test]
@@ -197,7 +203,7 @@ namespace DataGraphTests
             var overwriteNode = new ArrayNode(data);
             DataGraph.DataGraph.OverwriteDataAtLevel(node, overwriteNode, 2);
             Console.WriteLine(PrintData(node.Data));
-	        Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 2).First(), "foobar");
+	        Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 2)[0], "foobar");
 	    }
 
         [Test]
@@ -210,7 +216,7 @@ namespace DataGraphTests
             var overwriteNode = new ArrayNode(data);
             DataGraph.DataGraph.OverwriteDataAtLevel(node, overwriteNode, 2);
             Console.WriteLine(PrintData(node.Data));
-            Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 2).First(), "foobar");
+            Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 2)[0], "foobar");
         }
 
 	    [Test]
@@ -258,8 +264,8 @@ namespace DataGraphTests
             DataGraph.DataGraph.SuperimposeFromNodeDown(node1.Children.First(), node2);
             Console.WriteLine(PrintData(node1.Data));
 	        var data = DataGraph.DataGraph.GetDataAtLevel(node1, node1.Depth() - 1);
-            Assert.AreEqual(data.First(), 0);
-            Assert.AreEqual(data.Last(), "C");
+            Assert.AreEqual(data[0], 0);
+            Assert.AreEqual(data[data.Count-1], "C");
         }
 
         [Test]
@@ -284,8 +290,8 @@ namespace DataGraphTests
             DataGraph.DataGraph.SuperimposeFromNodeDown(node1.Children.First(), node2);
             Console.WriteLine(PrintData(node1.Data));
             var data = DataGraph.DataGraph.GetDataAtLevel(node1, node1.Depth() - 1);
-            Assert.AreEqual(data.First(), 0);
-            Assert.AreEqual(data.Last(), "C");
+            Assert.AreEqual(data[0], 0);
+            Assert.AreEqual(data[data.Count-1], "C");
         }
 
 	    [Test]
@@ -295,7 +301,7 @@ namespace DataGraphTests
             var result = DataGraph.DataGraph.SuperimposeDataAtLevel(JaggedTestArray(), data, -1);
             Console.WriteLine(PrintData(result));
             var resultNode = new ArrayNode((IEnumerable)result);
-	        Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel(resultNode, 1).ElementAt(1),data);
+	        Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel(resultNode, 1)[1],data);
 	    }
 
         [Test]
@@ -305,7 +311,7 @@ namespace DataGraphTests
             var result = DataGraph.DataGraph.SuperimposeDataAtLevel(JaggedTestArray(), data, -1);
             Console.WriteLine(PrintData(result));
             var resultNode = new ArrayNode((IEnumerable)result);
-            Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel(resultNode, 1).ElementAt(1), data.Concat(new object[] {null}));
+            Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel(resultNode, 1)[1], data.Concat(new object[] {null}));
         }
 
         private IEnumerable SingleDimensionalTestArray(){

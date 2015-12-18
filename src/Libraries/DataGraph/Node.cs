@@ -283,7 +283,7 @@ namespace DataGraph
         /// <param name="data">An object representing the data.</param>
         /// <param name="level">A level specified from the leaves starting at -1.</param>
         /// <returns></returns>
-        public static IEnumerable<object> GetDataAtLevel([ArbitraryDimensionArrayImport]object data, int level)
+        public static IList GetDataAtLevel([ArbitraryDimensionArrayImport]object data, int level)
         {
             var node = FromData(data);
             return GetDataAtLevel(node, node.Depth() + level);
@@ -338,7 +338,7 @@ namespace DataGraph
         /// <returns>The data at level from node.</returns>
         /// <param name="root">The node from which the data gathering will begin.</param>
         /// <param name="level">The level specified starting at -1(leaves), and continuing -2, -3, etc. </param>
-        internal static IEnumerable<object> GetDataAtLevel(Node node, int level)
+        internal static IList GetDataAtLevel(Node node, int level)
         {
             if (level >= node.Depth())
             {
@@ -347,7 +347,7 @@ namespace DataGraph
 
             var nodes = new List<Node>();
             GetNodesAtLevel(node, ref nodes, level);
-            return nodes.Select(n => n.Data);
+            return nodes.Select(n => n.Data).ToList();
         }
 
         /// <summary>
