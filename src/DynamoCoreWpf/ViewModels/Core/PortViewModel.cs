@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using Dynamo.Graph;
 using Dynamo.Graph.Nodes;
@@ -112,6 +113,54 @@ namespace Dynamo.ViewModels
             }
 
         }
+
+        public bool IsDominantInput
+        {
+            get { return _port.IsDominantInput; }
+            set
+            {
+                foreach (var port in _node.InPorts)
+                {
+                    port.IsDominantInput = false;
+                }
+                _port.IsDominantInput = value;
+                RaisePropertyChanged("IsDominantInput");
+            }
+        }
+
+        public string InputDataLevel
+        {
+            get { return _port.InputDataLevel.ToString(CultureInfo.InvariantCulture); }
+            set
+            {
+                int result;
+                if (int.TryParse(value, out result))
+                {
+                    if (result > -1)
+                    {
+                        _port.InputDataLevel = -1;
+                    }
+                    _port.InputDataLevel = result;
+                }
+                else
+                {
+                    _port.InputDataLevel = -1;
+                }
+                RaisePropertyChanged("InputDataLevel");
+                RaisePropertyChanged("PortLevelText");
+            }
+        }
+
+        public string PortLevelText
+        {
+            get { return "@" + _port.InputDataLevel.ToString(CultureInfo.InvariantCulture); }
+        }
+
+        public bool IsInputPort
+        {
+            get { return _port.PortType == PortType.Input; }
+        }
+
         #endregion
 
         #region events

@@ -910,8 +910,8 @@ namespace Dynamo.Graph.Nodes
 
             try
             {
-                //var levelledNodes = InsertListLevelDataAstNodes(inputAstNodes);
-                result = BuildOutputAst(inputAstNodes);
+                var levelledNodes = InsertListLevelDataAstNodes(inputAstNodes);
+                result = BuildOutputAst(levelledNodes);
             }
             catch (Exception e)
             {
@@ -976,12 +976,14 @@ namespace Dynamo.Graph.Nodes
             var newAstNodes = new List<AssociativeNode>();
 
             // For right now do -1 as a test.
+            var count = 0;
             foreach (var node in inputAstNodes)
             {
-                var intNode = AstFactory.BuildIntNode(-1);
+                var intNode = AstFactory.BuildIntNode(inPorts[count].InputDataLevel);
                 var func = new Func<object, int, IList>(DataGraph.DataGraph.GetDataAtLevel);
                 var funcCall = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() { node, intNode });
                 newAstNodes.Add(funcCall);
+                count++;
             }
 
             return newAstNodes;
@@ -1345,6 +1347,18 @@ namespace Dynamo.Graph.Nodes
             //Configure Snap Edges
             ConfigureSnapEdges(inPorts);
             areInputPortsRegistered = true;
+
+            // Set the dominant input to the first input
+            // port by default. This will not override the
+            // currently set dominant input if an existing
+            // port already has it set.
+            if (!inPorts.Any(p => p.IsDominantInput))
+            {
+                if (inPorts.Any())
+                {
+                    inPorts.First().IsDominantInput = true;
+                }
+            }
 
             RaisesModificationEvents = true;
             OnNodeModified();

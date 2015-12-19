@@ -34,6 +34,8 @@ namespace Dynamo.Graph.Nodes
         ObservableCollection<ConnectorModel> connectors = new ObservableCollection<ConnectorModel>();
         private bool usingDefaultValue;
         private PortData portData;
+        private int inputDataLevel;
+
         #endregion
 
         #region public members
@@ -156,8 +158,27 @@ namespace Dynamo.Graph.Nodes
             get; private set;
         }
 
-        public SnapExtensionEdges extensionEdges { get; set; }        
-    
+        public SnapExtensionEdges extensionEdges { get; set; }
+
+        /// <summary>
+        /// A flag indicating whether the Port is the dominant input.
+        /// </summary>
+        public bool IsDominantInput { get; set; }
+
+        /// <summary>
+        /// An integer representing the level of nesting to access 
+        /// within data coming into this port.
+        /// </summary>
+        public int InputDataLevel
+        {
+            get { return inputDataLevel; }
+            set
+            {
+                inputDataLevel = value;
+                Owner.OnNodeModified();
+            }
+        }
+
         #endregion
 
         public PortModel(PortType portType, NodeModel owner, PortData data)
@@ -165,7 +186,7 @@ namespace Dynamo.Graph.Nodes
             IsConnected = false;
             PortType = portType;
             Owner = owner;
-
+            InputDataLevel = -1;
             SetPortData(data);
 
             MarginThickness = new Thickness(0);

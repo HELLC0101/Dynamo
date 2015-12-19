@@ -47,11 +47,20 @@
             </interactivity:Interaction.Triggers>
 
             <Grid.ContextMenu>
-                <ContextMenu Visibility="{Binding Path=DefaultValueEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ContextMenu>
                     <MenuItem Header="{x:Static p:Resources.PortViewContextMenuUserDefaultValue}"
+                              Visibility="{Binding Path=DefaultValueEnabled, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                               IsCheckable="True"
                               IsEnabled="{Binding Path=DefaultValueEnabled, Mode=OneWay}"
                               IsChecked="{Binding Path=UsingDefaultValue, Mode=TwoWay}" />
+                    <MenuItem Header="Dominant"
+                              Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                              IsChecked ="{Binding Path=IsDominantInput, Mode=TwoWay}"
+                              IsEnabled="True"/>
+                    <MenuItem Header="Level"
+                              Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+                        <TextBox Text="{Binding InputDataLevel, Mode=TwoWay}" Width="100"/>
+                    </MenuItem>
                 </ContextMenu>
             </Grid.ContextMenu>
 
@@ -129,8 +138,9 @@
                     </Style>
                 </Rectangle.Style>
             </Rectangle>
-            
-            <TextBlock Name="portNameTb"
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Name="portNameTb"
                        Width="Auto"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortName, Converter={StaticResource PortNameConverter} }"
@@ -141,8 +151,18 @@
                        IsHitTestVisible="False"
                        Background="{x:Null}"
                        Foreground="#555555">
-            </TextBlock>
-
+                </TextBlock>
+                <TextBlock Name="PortLevelTb"
+                       Style="{StaticResource SZoomFadeText}"
+                       Text="{Binding Path=PortLevelText}"
+                       Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                       VerticalAlignment="Center"
+                       FontSize="13"
+                       FontFamily="{StaticResource OpenSansRegular}"
+                       Background="{x:Null}"
+                       Padding="0,7,6,7"
+                       Foreground="#888888"/>
+            </StackPanel>
         </Grid>
     
     </DataTemplate>
