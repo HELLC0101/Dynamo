@@ -219,7 +219,20 @@ namespace DataGraphTests
             Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel((Node)node, (int) 2)[0], "foobar");
         }
 
-	    [Test]
+        [Test]
+        public void OverwriteNodesAtLevel_JaggedArray_OverwriteTwoDimensionalData()
+        {
+            var node = new ArrayNode(JaggedTestArray());
+            DataGraph.DataGraph.NullAtLevelAndBelow(node, 2);
+            var data = new[] { new[] { "foobar", "foobuzz"}, new[] {"foobarbuzz", "foobuzzbar" }};
+            var overwriteNode = new ArrayNode(data);
+            DataGraph.DataGraph.OverwriteDataAtLevel(node, overwriteNode, 2);
+            Console.WriteLine(PrintData(node.Data));
+            var result = DataGraph.DataGraph.GetDataAtAddress(node.Data, new[] {0, 1, 0, 0});
+            Assert.AreEqual(result , "foobar");
+        }
+
+        [Test]
 	    public void Phase5()
 	    {
 	        var data1 = new[]
@@ -254,64 +267,64 @@ namespace DataGraphTests
         }
 
 	    [Test]
-	    public void SuperImposeFromNodeDown_AllGood()
+	    public void SuperimposeDataAtLevel_StartsWithLeaf_ThrowsException()
 	    {
-	        var data1 = new[] {arr1, arr1};
-	        var data2 = new[] {0, 1, 2};
-            var node1 = new ArrayNode(data1);
-            Console.WriteLine(PrintData(node1.Data));
-            var node2 = new ArrayNode(data2);
-            DataGraph.DataGraph.SuperimposeFromNodeDown(node1.Children.First(), node2);
-            Console.WriteLine(PrintData(node1.Data));
-	        var data = DataGraph.DataGraph.GetDataAtLevel(node1, node1.Depth() - 1);
-            Assert.AreEqual(data[0], 0);
-            Assert.AreEqual(data[data.Count-1], "C");
+            // Provide a square array.
+            // Attempt to overwrite with a leaf node.
+            // This would result in data loss.
+            var data1 = new[] { arr1, arr1 };
+            var data2 = new []{0};
+            Assert.Throws<Exception>(() => DataGraph.DataGraph.SuperimposeDataAtLevel(data1, data2, -2));
         }
 
         [Test]
-        public void SuperImposeFromNodeDown_SuperimposeStartsWithLeaf_ThrowsException()
+        public void SuperimposeDataAtLevel_ReplacesLeafWithArray()
         {
             var data1 = new[] { arr1, arr1 };
-            var data2 = 0;
-            var node1 = new ArrayNode(data1);
-            Console.WriteLine(PrintData(node1.Data));
-            var node2 = new LeafNode(data2);
-            Assert.Throws<Exception>(() => DataGraph.DataGraph.SuperimposeFromNodeDown(node1.Children.First(), node2));
+            var data2 = new ArrayList() { 0, 1, new[] { 2, 3 } };
+            Console.WriteLine(PrintData(data1));
+
+            var data = DataGraph.DataGraph.SuperimposeDataAtLevel(data1, data2, -1, false);
+            Console.WriteLine(PrintData(data));
+
+            var result1 = DataGraph.DataGraph.GetDataAtAddress(data, new []{ 0, 0, 0});
+            var result2 = DataGraph.DataGraph.GetDataAtAddress(data, new []{ 0, 1, 2 });
+
+            Assert.AreEqual(result1, 0);
+            Assert.AreEqual(result2, "C");
         }
 
         [Test]
-        public void SuperImposeFromNodeDown_SuperimposeReplacesLeafWithArray()
-        {
-            var data1 = new[] { arr1, arr1 };
-            var data2 = new ArrayList(){ 0, 1, new [] {2,3} };
-            var node1 = new ArrayNode(data1);
-            Console.WriteLine(PrintData(node1.Data));
-            var node2 = new ArrayNode(data2);
-            DataGraph.DataGraph.SuperimposeFromNodeDown(node1.Children.First(), node2);
-            Console.WriteLine(PrintData(node1.Data));
-            var data = DataGraph.DataGraph.GetDataAtLevel(node1, node1.Depth() - 1);
-            Assert.AreEqual(data[0], 0);
-            Assert.AreEqual(data[data.Count-1], "C");
-        }
-
-	    [Test]
-	    public void SuperimposeDataAtLevel_LargerData()
+	    public void SuperimposeDataAtLevel_LargerData_OverwritesExistingAndExpandsIntoNextCollection()
 	    {
             var data = new[] {"foobar", "foobuzz", "foobarbuzz", "foobuzzbar" };
             var result = DataGraph.DataGraph.SuperimposeDataAtLevel(JaggedTestArray(), data, -1);
+
             Console.WriteLine(PrintData(result));
-            var resultNode = new ArrayNode((IEnumerable)result);
-	        Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel(resultNode, 1)[1],data);
-	    }
+
+            var result1 = DataGraph.DataGraph.GetDataAtAddress(result, new[] { 0, 1,0 });
+            Assert.AreEqual(result1, "foobar");
+
+            var result2 = DataGraph.DataGraph.GetDataAtAddress(result, new[] { 0, 1, 2 });
+            Assert.AreEqual(result2, "foobarbuzz");
+
+            var result3 = DataGraph.DataGraph.GetDataAtAddress(result, new[] { 0, 2, 0 });
+            Assert.AreEqual(result3, "foobuzzbar");
+        }
 
         [Test]
-        public void SuperimposeDataAtLevel_SmallerData()
+        public void SuperimposeDataAtLevel_SmallerData_OverwritesExistingData()
         {
             var data = new[] { "foobar", "foobuzz"};
             var result = DataGraph.DataGraph.SuperimposeDataAtLevel(JaggedTestArray(), data, -1);
+
             Console.WriteLine(PrintData(result));
-            var resultNode = new ArrayNode((IEnumerable)result);
-            Assert.AreEqual(DataGraph.DataGraph.GetDataAtLevel(resultNode, 1)[1], data.Concat(new object[] {null}));
+
+            var result1 = DataGraph.DataGraph.GetDataAtAddress(result, new[] {0, 1, 0});
+            Assert.AreEqual(result1, "foobar");
+
+            var result2 = DataGraph.DataGraph.GetDataAtAddress(result, new[] { 0, 2, 0 });
+            Assert.AreEqual(result2, null);
         }
 
         private IEnumerable SingleDimensionalTestArray(){

@@ -95,7 +95,7 @@ namespace DataGraph
         /// <summary>
         /// A collection of Nodes which are children of this node.
         /// </summary>
-        public IEnumerable<Node> Children
+        public IList<Node> Children
         {
             get
             {
@@ -112,7 +112,7 @@ namespace DataGraph
         /// <summary>
         /// Get all leaf nodes from the specified node.
         /// </summary>
-        public IEnumerable<LeafNode> GetAllLeafNodes()
+        public IList<LeafNode> GetAllLeafNodes()
         {
             var gatheredLeaves = new List<LeafNode>();
             GetAllLeafNodesImpl(this, ref gatheredLeaves);
@@ -139,10 +139,10 @@ namespace DataGraph
         /// Get all data associated with leaf nodes from the specified node.
         /// </summary>
         /// <returns>The all leaf data.</returns>
-        public IEnumerable<object> GetAllLeafData()
+        public IList<object> GetAllLeafData()
         {
             var leaves = GetAllLeafNodes();
-            return leaves.Select(n => n.Data);
+            return leaves.Select(n => n.Data).ToList();
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace DataGraph
             }
         }
 
-        private IEnumerable<object> ToEnumerable()
+        private IList<object> ToEnumerable()
         {
             var result = new List<object>();
 
@@ -289,6 +289,68 @@ namespace DataGraph
             return GetDataAtLevel(node, node.Depth() + level);
         }
 
+        /// <summary>
+        /// Find an object within a deeply nested array by specifying its address as an 
+        /// array of ints representing branches in a tree.
+        /// </summary>
+        /// <param name="data">The nested data.</param>
+        /// <param name="address">An array of <see cref="int">ints</see>/></param>
+        /// <returns></returns>
+        public static object GetDataAtAddress([ArbitraryDimensionArrayImport] object data, IList<int> address)
+        {
+            var node = FromData(data);
+            if (node is LeafNode)
+            {
+                if (address.Count > 0 || address.First() != 0)
+                {
+                    return null;
+                }
+            }
+
+            var arrayNode = node as ArrayNode;
+            if (arrayNode == null)
+            {
+                throw new Exception("This node is not an array node and cannot be navigated.");
+            }
+
+            var newAddress = address.Skip(1).ToList();
+            var result = Navigate(arrayNode, newAddress);
+            return result.Data;
+        }
+
+        private static Node Navigate(Node node, IList<int> address)
+        {
+            if (node is LeafNode)
+            {
+                return node;
+            }
+
+            var arrNode = node as ArrayNode;
+            if (arrNode == null)
+            {
+                throw new Exception("There was an error navigating the node.");
+            }
+
+            var index = address.First();
+            if (arrNode.Children.Count < index)
+            {
+                return null;
+            }
+
+            if (index >= arrNode.Children.Count)
+            {
+                throw new Exception("The specified address is not valid for this data.");
+            }
+
+            var newAddress = new List<int>(address.Skip(1));
+            if (!newAddress.Any())
+            {
+                return arrNode.Children[index];
+            }
+
+            return Navigate(arrNode.Children[index], newAddress);
+        }
+
         #region internal methods
 
         /// <summary>
@@ -345,8 +407,7 @@ namespace DataGraph
                 throw new Exception("You cannot specify a level deeper than the depth of the tree.");
             }
 
-            var nodes = new List<Node>();
-            GetNodesAtLevel(node, ref nodes, level);
+            var nodes = GetNodesAtLevel(node, level);
             return nodes.Select(n => n.Data).ToList();
         }
 
@@ -356,14 +417,16 @@ namespace DataGraph
         /// If the level specified is a negative number then the root node will be replaced
         /// with an additional root node.
         /// </summary>
-        internal static void GetNodesAtLevel(Node node, ref List<Node> gatheredNodes, int level)
+        internal static IList<Node> GetNodesAtLevel(Node node, int level)
         {
+            var gatheredNodes = new List<Node>();
+
             while (true)
             {
                 if (node.Level == level)
                 {
                     gatheredNodes.Add(node);
-                    return;
+                    return gatheredNodes;
                 }
 
                 if (level < 0)
@@ -378,7 +441,7 @@ namespace DataGraph
                         count = count - 1;
                     }
                     gatheredNodes.Add(currentRoot);
-                    return;
+                    return gatheredNodes;
                 }
 
                 if (node is ArrayNode)
@@ -386,12 +449,14 @@ namespace DataGraph
                     var arrNode = (ArrayNode)node;
                     foreach (var n in arrNode.Children)
                     {
-                        GetNodesAtLevel(n, ref gatheredNodes, level);
+                        gatheredNodes.AddRange(GetNodesAtLevel(n, level));
                     }
                 }
 
                 break;
             }
+
+            return gatheredNodes;
         }
 
         /// <summary>
@@ -401,8 +466,8 @@ namespace DataGraph
         /// </summary>
         internal static void NullAtLevelAndBelow(Node node, int level)
         {
-            var nodesAtLevel = new List<Node>();
-            GetNodesAtLevel(node, ref nodesAtLevel, level);
+            var nodesAtLevel = GetNodesAtLevel(node, level);
+
             foreach (var n in nodesAtLevel)
             {
                 ArrayNode.TraverseDownAndSetDataAtLeaf(n, null);
@@ -415,31 +480,21 @@ namespace DataGraph
         /// </summary>
         internal static void OverwriteDataAtLevel(Node node, Node overwriteNode, int level)
         {
-            var nodesAtLevel = new List<Node>();
-            GetNodesAtLevel(node, ref nodesAtLevel, level);
+            var nodesAtLevel = GetNodesAtLevel(node, level);
+            var overwriteNodes = GetNodesAtLevel(overwriteNode, 1);
 
-            // Get a collection of the parents to nodes at this level.
-            // We do this lookup from the leaves to ensure that we only get
-            // the parent nodes which correspond with the nodes at this level
-            // and not all of the nodes at the level above.
-            var nodeParents = nodesAtLevel.Select(n => n.Parent).Distinct().ToList();
-
-            var overwriteNodes = new List<Node>();
-            GetNodesAtLevel(overwriteNode, ref overwriteNodes, (int) 1);
-            var overwriteParents = overwriteNodes.Select(n => n.Parent).Distinct().ToList();
-
-            for (var i = 0; i < nodeParents.Count(); i++)
+            for (var i = 0; i < nodesAtLevel.Count(); i++)
             {
-                if (i >= overwriteParents.Count())
+                if (i >= overwriteNodes.Count())
                 {
                     break;
                 }
 
-                DataGraph.SuperimposeFromNodeDown(nodeParents[i], overwriteParents.ElementAt(i));
+                DataGraph.SuperimposeFromNodeDown(nodesAtLevel[i], overwriteNodes.ElementAt(i));
             }
         }
 
-        internal static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
+        private static void SuperimposeFromNodeDown(Node startingNode, Node nodeToSuperimpose)
         {
             var leafNode = startingNode as LeafNode;
             var superimposeLeaf = nodeToSuperimpose as LeafNode;
