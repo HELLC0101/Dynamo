@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -909,8 +910,8 @@ namespace Dynamo.Graph.Nodes
 
             try
             {
-                var levelledNodes = InsertListLevelDataAstNodes(inputAstNodes);
-                result = BuildOutputAst(levelledNodes);
+                //var levelledNodes = InsertListLevelDataAstNodes(inputAstNodes);
+                result = BuildOutputAst(inputAstNodes);
             }
             catch (Exception e)
             {
@@ -978,7 +979,7 @@ namespace Dynamo.Graph.Nodes
             foreach (var node in inputAstNodes)
             {
                 var intNode = AstFactory.BuildIntNode(-1);
-                var func = new Func<object, int, IEnumerable<object>>(DataGraph.Node.GetDataAtLevel);
+                var func = new Func<object, int, IList>(DataGraph.DataGraph.GetDataAtLevel);
                 var funcCall = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() { node, intNode });
                 newAstNodes.Add(funcCall);
             }
