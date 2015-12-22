@@ -1098,7 +1098,6 @@ namespace Dynamo.ViewModels
             return false;
         }
 
-
         #region Private Helper Methods
         private Point GetTopLeft()
         {

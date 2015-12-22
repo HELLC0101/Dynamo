@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using Dynamo.Graph;
 using Dynamo.Graph.Nodes;
@@ -119,13 +120,30 @@ namespace Dynamo.ViewModels
             get { return _port.IsDominantInput; }
             set
             {
+                if (!value) return;
+
+                // Un-set the current dominant
+                var currentDominant = _port.Owner.InPorts.FirstOrDefault(p => p.IsDominantInput);
+                currentDominant.IsDominantInput = false;
+
+                // Set the new dominant port
+                _port.IsDominantInput = true;
+
+                // Update the UI.
                 foreach (var port in _node.InPorts)
                 {
-                    port.IsDominantInput = false;
+                    port.RaisePropertyChanged("IsDominantInput");
+                    port.RaisePropertyChanged("PortDominantText");
                 }
-                _port.IsDominantInput = value;
-                RaisePropertyChanged("IsDominantInput");
+
+                // Re-evaluate
+                _port.Owner.OnNodeModified();
             }
+        }
+
+        public string PortDominantText
+        {
+            get { return IsDominantInput ? "D" : string.Empty; }
         }
 
         public string InputDataLevel

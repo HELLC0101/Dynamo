@@ -35,6 +35,7 @@ namespace Dynamo.Graph.Nodes
         private bool usingDefaultValue;
         private PortData portData;
         private int inputDataLevel;
+        private bool isDominantInput;
 
         #endregion
 
@@ -163,7 +164,14 @@ namespace Dynamo.Graph.Nodes
         /// <summary>
         /// A flag indicating whether the Port is the dominant input.
         /// </summary>
-        public bool IsDominantInput { get; set; }
+        public bool IsDominantInput
+        {
+            get { return isDominantInput; }
+            set
+            {
+                isDominantInput = value;
+            }
+        }
 
         /// <summary>
         /// An integer representing the level of nesting to access 

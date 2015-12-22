@@ -910,8 +910,7 @@ namespace Dynamo.Graph.Nodes
 
             try
             {
-                var levelledNodes = InsertListLevelDataAstNodes(inputAstNodes);
-                result = BuildOutputAst(levelledNodes);
+                result = BuildOutputAst(inputAstNodes);
             }
             catch (Exception e)
             {
@@ -971,22 +970,42 @@ namespace Dynamo.Graph.Nodes
                                       GetAstIdentifierForOutputIndex(index))));
         }
 
-        private List<AssociativeNode> InsertListLevelDataAstNodes(List<AssociativeNode> inputAstNodes)
+        internal List<AssociativeNode> CreateLevelSelectionNodes(IEnumerable<AssociativeNode> inputAstNodes, ref List<AssociativeNode> idents)
         {
             var newAstNodes = new List<AssociativeNode>();
 
-            // For right now do -1 as a test.
             var count = 0;
             foreach (var node in inputAstNodes)
             {
                 var intNode = AstFactory.BuildIntNode(inPorts[count].InputDataLevel);
                 var func = new Func<object, int, IList>(DataGraph.DataGraph.GetDataAtLevel);
-                var funcCall = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() { node, intNode });
-                newAstNodes.Add(funcCall);
+                var funcNode = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() { node, intNode });
+                var identNode = AstFactory.BuildIdentifier(GUID + "_level_" + count);
+                idents.Add(identNode);
+                var binNode = AstFactory.BuildAssignment(identNode, funcNode);
+                newAstNodes.Add(binNode);
                 count++;
             }
 
             return newAstNodes;
+        }
+
+        internal AssociativeNode PromoteToDominantArray(int outIndex, int dominantLevel, AssociativeNode dominantDataNode)
+        {
+            // Create a node to generate a new array with nulls.
+            // This will use the original value of the data passed into this
+            // node before the levelling occurred.
+            var superimposeFunc = new Func<object, object, int, bool, object>(DataGraph.DataGraph.SuperimposeDataAtLevel);
+
+            var boolNode = AstFactory.BuildBooleanNode(true);
+            var levelNode = AstFactory.BuildIntNode(dominantLevel);
+
+            // Create a function call node to do the superimposition.
+            var superimposeNode = AstFactory.BuildFunctionCall(superimposeFunc, 
+                new List<AssociativeNode> {dominantDataNode, GetAstIdentifierForOutputIndex(outIndex), levelNode, boolNode });
+
+            var assign = AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(outIndex), superimposeNode);
+            return assign;
         }
 
         /// <summary>

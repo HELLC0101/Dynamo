@@ -325,11 +325,14 @@ namespace Dynamo.Engine.CodeGeneration
                 "Shouldn't have null nodes in the AST list");
 #endif
 
+            var levelledIdents = new List<AssociativeNode>();
+            resultList.AddRange(node.CreateLevelSelectionNodes(inputAstNodes, ref levelledIdents));
+
             var scopedNode = node as ScopedNodeModel;
             IEnumerable<AssociativeNode> astNodes = 
                 scopedNode != null
                     ? scopedNode.BuildAstInScope(inputAstNodes, verboseLogging, this)
-                    : node.BuildAst(inputAstNodes, context);
+                    : node.BuildAst(levelledIdents, context);
 
             if (verboseLogging)
             {
@@ -368,6 +371,23 @@ namespace Dynamo.Engine.CodeGeneration
                     else
                         resultList.Add(item);
                 }
+            }
+
+            AssociativeNode dominantDataNode = null;
+            var dominantLevel = -1;
+            if (node.InPorts.Any())
+            {
+                var dominantPort = node.InPorts.FirstOrDefault(p => p.IsDominantInput);
+                if (dominantPort != null)
+                {
+                    dominantDataNode = inputAstNodes[dominantPort.Index];
+                    dominantLevel = dominantPort.InputDataLevel;
+                }
+            }
+
+            for (var i = 0; i < node.OutPorts.Count; i++)
+            {
+                resultList.Add(node.PromoteToDominantArray(i, dominantLevel, dominantDataNode));
             }
         }
 
