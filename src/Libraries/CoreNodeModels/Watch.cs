@@ -38,6 +38,8 @@ namespace DSCoreNodesUI
 
             ShouldDisplayPreviewCore = false;
             HasRunOnce = false;
+
+            SupportsPortLevelDataExtraction = false;
         }
 
         protected override void OnBuilt()

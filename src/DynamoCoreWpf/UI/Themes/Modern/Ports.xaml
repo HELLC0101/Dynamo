@@ -31,7 +31,7 @@
     </ResourceDictionary.MergedDictionaries>
 
     <DataTemplate DataType="{x:Type viewModels:PortViewModel}">
-      
+        
         <Grid Name="mainGrid"
               Background="Transparent"
               IsHitTestVisible="True"
@@ -39,7 +39,7 @@
               Height="{Binding Path=Height}"
               ToolTipService.ShowDuration="60000"
              >
-
+            
             <interactivity:Interaction.Triggers>
                 <views:HandlingEventTrigger EventName="MouseLeftButtonDown">
                     <interactivity:InvokeCommandAction Command="{Binding Path=ConnectCommand}" />
@@ -54,12 +54,12 @@
                               IsEnabled="{Binding Path=DefaultValueEnabled, Mode=OneWay}"
                               IsChecked="{Binding Path=UsingDefaultValue, Mode=TwoWay}" />
                     <MenuItem Header="Dominant"
-                              Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                              Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                               IsCheckable="True"
                               IsChecked ="{Binding Path=IsDominantInput, Mode=TwoWay}"
                               IsEnabled="True"/>
                         <MenuItem Header="Level"
-                              Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+                              Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
                         <TextBox Text="{Binding InputDataLevel, Mode=TwoWay}" Width="100"/>
                     </MenuItem>
                 </ContextMenu>
@@ -156,7 +156,7 @@
                 <TextBlock Name="PortLevelTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortLevelText}"
-                       Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                       Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                        VerticalAlignment="Center"
                        FontSize="13"
                        FontFamily="{StaticResource OpenSansRegular}"
@@ -166,7 +166,7 @@
                 <TextBlock Name="PortDominantTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortDominantText}"
-                       Visibility="{Binding IsInputPort, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                       Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                        VerticalAlignment="Center"
                        FontSize="13"
                        FontFamily="{StaticResource OpenSansRegular}"

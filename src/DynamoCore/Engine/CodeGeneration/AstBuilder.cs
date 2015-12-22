@@ -325,32 +325,39 @@ namespace Dynamo.Engine.CodeGeneration
                 "Shouldn't have null nodes in the AST list");
 #endif
 
-            // Create AST representing the level data extraction.
-            var levelledIdents = new List<AssociativeNode>();
-            var astNodes = node.CreateLevelSelectionNodes(inputAstNodes, ref levelledIdents);
+            var astNodes = new List<AssociativeNode>();
+            var inputIdentifiers = node.SupportsPortLevelDataExtraction ? new List<AssociativeNode>() : inputAstNodes;
+            if (node.SupportsPortLevelDataExtraction)
+            {
+                // Create AST representing the level data extraction.
+                astNodes.AddRange(node.CreateLevelSelectionNodes(inputAstNodes, ref inputIdentifiers));
+            }
 
             // Build AST to do the replicated dispatch, passing the level data extraction identifiers.
             var scopedNode = node as ScopedNodeModel;
             astNodes.AddRange(
                 scopedNode != null
                     ? scopedNode.BuildAstInScope(inputAstNodes, verboseLogging, this)
-                    : node.BuildAst(levelledIdents, context));
+                    : node.BuildAst(inputIdentifiers, context));
 
-            // Build the AST to promote the results back to the dominant array
-            AssociativeNode dominantDataNode = null;
-            var dominantLevel = -1;
-            if (node.InPorts.Any())
+            if (node.SupportsPortLevelDataExtraction)
             {
-                var dominantPort = node.InPorts.FirstOrDefault(p => p.IsDominantInput);
-                if (dominantPort != null)
+                // Build the AST to promote the results back to the dominant array
+                AssociativeNode dominantDataNode = null;
+                var dominantLevel = -1;
+                if (node.InPorts.Any())
                 {
-                    dominantDataNode = inputAstNodes[dominantPort.Index];
-                    dominantLevel = dominantPort.InputDataLevel;
-                }
+                    var dominantPort = node.InPorts.FirstOrDefault(p => p.IsDominantInput);
+                    if (dominantPort != null)
+                    {
+                        dominantDataNode = inputAstNodes[dominantPort.Index];
+                        dominantLevel = dominantPort.InputDataLevel;
+                    }
 
-                for (var i = 0; i < node.OutPorts.Count; i++)
-                {
-                    astNodes.Add(node.PromoteToDominantArray(i, dominantLevel, dominantDataNode));
+                    for (var i = 0; i < node.OutPorts.Count; i++)
+                    {
+                        astNodes.Add(node.PromoteToDominantArray(i, dominantLevel, dominantDataNode));
+                    }
                 }
             }
 

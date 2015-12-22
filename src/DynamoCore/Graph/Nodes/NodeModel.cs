@@ -669,6 +669,12 @@ namespace Dynamo.Graph.Nodes
             }
         }
 
+        /// <summary>
+        /// A flag indicating whether this node supports extraction
+        /// of data at a level on input ports.
+        /// </summary>
+        public bool SupportsPortLevelDataExtraction { get; protected set; }
+
         #endregion
 
         #region freeze execution
@@ -803,6 +809,8 @@ namespace Dynamo.Graph.Nodes
             ArgumentLacing = LacingStrategy.Disabled;
 
             RaisesModificationEvents = true;
+
+            SupportsPortLevelDataExtraction = true;
         }
 
         /// <summary>
@@ -1808,11 +1816,13 @@ namespace Dynamo.Graph.Nodes
                    .Where(x => x.port.UsingDefaultValue);
 
             //write port information
-            foreach (var port in portsWithDefaultValues)
+            foreach (var port in InPorts)
             {
-                XmlElement portInfo = element.OwnerDocument.CreateElement("PortInfo");
-                portInfo.SetAttribute("index", port.index.ToString(CultureInfo.InvariantCulture));
-                portInfo.SetAttribute("default", true.ToString());
+                var portInfo = element.OwnerDocument.CreateElement("PortInfo");
+                portInfo.SetAttribute("index", port.Index.ToString(CultureInfo.InvariantCulture));
+                portInfo.SetAttribute("default", port.UsingDefaultValue? true.ToString() : false.ToString());
+                portInfo.SetAttribute("dominant", port.IsDominantInput ? true.ToString() : false.ToString());
+                portInfo.SetAttribute("level", port.InputDataLevel.ToString(CultureInfo.InvariantCulture));
                 element.AppendChild(portInfo);
             }
 
@@ -1860,15 +1870,31 @@ namespace Dynamo.Graph.Nodes
             //read port information
             foreach (XmlNode subNode in nodeElement.ChildNodes)
             {
-                if (subNode.Name == "PortInfo")
+                if (subNode.Name != "PortInfo" || subNode.Attributes == null) continue;
+
+                var index = int.Parse(subNode.Attributes["index"].Value);
+                if (index >= InPorts.Count) continue;
+
+                var currentPort = inPorts[index];
+
+                portInfoProcessed.Add(index);
+
+                if (subNode.Attributes["default"] != null)
                 {
-                    int index = int.Parse(subNode.Attributes["index"].Value);
-                    if (index < InPorts.Count)
-                    {
-                        portInfoProcessed.Add(index);
-                        bool def = bool.Parse(subNode.Attributes["default"].Value);
-                        inPorts[index].UsingDefaultValue = def;
-                    }
+                    var def = bool.Parse(subNode.Attributes["default"].Value);
+                    currentPort.UsingDefaultValue = def;
+                }
+
+                if (subNode.Attributes["dominant"] != null)
+                {
+                    var dominant = bool.Parse(subNode.Attributes["dominant"].Value);
+                    currentPort.IsDominantInput = dominant;
+                }
+
+                if (subNode.Attributes["level"] != null)
+                {
+                    var level = int.Parse(subNode.Attributes["level"].Value);
+                    currentPort.InputDataLevel = level;
                 }
             }
 

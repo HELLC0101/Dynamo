@@ -179,6 +179,16 @@ namespace Dynamo.ViewModels
             get { return _port.PortType == PortType.Input; }
         }
 
+        public bool ShouldDisplayPortLevelExtractionSettings
+        {
+            get { return _port.Owner.SupportsPortLevelDataExtraction && IsInputPort; }
+        }
+
+        public bool ShouldShowContextMenu
+        {
+            get { return ShouldDisplayPortLevelExtractionSettings || DefaultValueEnabled; }
+        }
+
         #endregion
 
         #region events
