@@ -259,6 +259,11 @@ namespace DataGraph
         public static object SuperimposeDataAtLevel([ArbitraryDimensionArrayImport]object data, [ArbitraryDimensionArrayImport]object superimposeData, 
             int level, bool overwriteLowerLevelsWithNulls = true)
         {
+            if (data == null || superimposeData == null)
+            {
+                throw new Exception("The superimposition of data failed due to null data.");
+            }
+
             // Clone the node.
             var baseNode = FromData(data);
             var convertedLevel = baseNode.Depth() + level;

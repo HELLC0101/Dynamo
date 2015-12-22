@@ -980,7 +980,7 @@ namespace Dynamo.Graph.Nodes
                 var intNode = AstFactory.BuildIntNode(inPorts[count].InputDataLevel);
                 var func = new Func<object, int, IList>(DataGraph.DataGraph.GetDataAtLevel);
                 var funcNode = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() { node, intNode });
-                var identNode = AstFactory.BuildIdentifier(GUID + "_level_" + count);
+                var identNode = AstFactory.BuildIdentifier(GUID + "_" + Guid.NewGuid() + "_level_" + count);
                 idents.Add(identNode);
                 var binNode = AstFactory.BuildAssignment(identNode, funcNode);
                 newAstNodes.Add(binNode);
