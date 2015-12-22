@@ -386,6 +386,16 @@ namespace Dynamo.ViewModels
             }
         }
 
+        public bool SupportsPortLevelDataExtraction
+        {
+            get { return NodeModel.SupportsPortLevelDataExtraction; }
+            set
+            {
+                NodeModel.SupportsPortLevelDataExtraction = value;
+                RaisePropertyChanged("SupportsPortLevelDataExtraction");
+            }
+        }
+
         #endregion
 
         #region events

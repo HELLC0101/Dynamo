@@ -219,6 +219,9 @@ namespace Dynamo.ViewModels
                 case "ToolTipContent":
                     RaisePropertyChanged("ToolTipContent");
                     break;
+                case "SupportsPortLevelDataExtraction":
+                    RaisePropertyChanged("ShouldDisplayPortLevelExtractionSettings");
+                    break;
             }
         }
 

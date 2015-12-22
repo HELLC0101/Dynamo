@@ -111,6 +111,10 @@
                           IsChecked="{Binding Path=IsSetAsInput,Mode=TwoWay}"
                           Visibility="{Binding Path=IsInput, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                           IsCheckable="True" />
+                <MenuItem Name="supportLevelExtraction_cm"
+                          Header="{x:Static p:Resources.NodeContextMenuSupportsPortLevelDataExtraction}"
+                          IsChecked="{Binding SupportsPortLevelDataExtraction, Mode=TwoWay}"
+                          IsCheckable="True"/>
                 <MenuItem Name="help_cm"
                           Header="{x:Static p:Resources.NodeContextMenuHelp}"
                           Command="{Binding Path=ShowHelpCommand}" />

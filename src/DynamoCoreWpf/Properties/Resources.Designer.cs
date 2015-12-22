@@ -3103,6 +3103,15 @@ namespace Dynamo.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Support Port Level Data Extraction.
+        /// </summary>
+        public static string NodeContextMenuSupportsPortLevelDataExtraction {
+            get {
+                return ResourceManager.GetString("NodeContextMenuSupportsPortLevelDataExtraction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to CATEGORY.
         /// </summary>
         public static string NodeHelpWindowNodeCategory {
@@ -3146,21 +3155,22 @@ namespace Dynamo.Wpf.Properties {
                 return ResourceManager.GetString("NodeHelpWindowNodeType", resourceCulture);
             }
         }
-
-        /// <summary> 
+        
+        /// <summary>
         ///   Looks up a localized string similar to Freeze.
         /// </summary>
-        public static string NodesRunStatus
-        {
-            get { return ResourceManager.GetString("NodesRunStatus", resourceCulture); }
+        public static string NodesRunStatus {
+            get {
+                return ResourceManager.GetString("NodesRunStatus", resourceCulture);
+            }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to There was an error while finding node view customizations for {0}. Contact the author of this assembly for more information..
         /// </summary>
         public static string NodeViewCustomizationFindErrorMessage {
             get {
-                return ResourceManager.GetString("NodeViewCustomizationFindErrorMessage", resourceCulture); 
+                return ResourceManager.GetString("NodeViewCustomizationFindErrorMessage", resourceCulture);
             }
         }
         

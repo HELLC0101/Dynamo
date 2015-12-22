@@ -62,6 +62,7 @@ namespace Dynamo.Graph.Nodes
         private ObservableCollection<PortModel> outPorts = new ObservableCollection<PortModel>();
         private readonly Dictionary<PortModel, PortData> portDataDict = new Dictionary<PortModel, PortData>();
 
+        private bool supportsPortLevelDataExtraction;
         #endregion
 
         #region public members
@@ -673,7 +674,16 @@ namespace Dynamo.Graph.Nodes
         /// A flag indicating whether this node supports extraction
         /// of data at a level on input ports.
         /// </summary>
-        public bool SupportsPortLevelDataExtraction { get; protected set; }
+        public bool SupportsPortLevelDataExtraction
+        {
+            get { return supportsPortLevelDataExtraction; }
+            set
+            {
+                if (supportsPortLevelDataExtraction == value) return;
+                supportsPortLevelDataExtraction = value;
+                OnNodeModified();
+            }
+        }
 
         #endregion
 
@@ -809,8 +819,6 @@ namespace Dynamo.Graph.Nodes
             ArgumentLacing = LacingStrategy.Disabled;
 
             RaisesModificationEvents = true;
-
-            SupportsPortLevelDataExtraction = false;
         }
 
         /// <summary>
@@ -1810,10 +1818,7 @@ namespace Dynamo.Graph.Nodes
             helper.SetAttribute("lacing", ArgumentLacing.ToString());
             helper.SetAttribute("isSelectedInput", IsSetAsInput.ToString());
             helper.SetAttribute("IsFrozen", isFrozenExplicitly);
-
-            var portsWithDefaultValues =
-                inPorts.Select((port, index) => new { port, index })
-                   .Where(x => x.port.UsingDefaultValue);
+            helper.SetAttribute("supportsPortLevelDataExtraction", supportsPortLevelDataExtraction);
 
             //write port information
             foreach (var port in InPorts)
@@ -1864,6 +1869,10 @@ namespace Dynamo.Graph.Nodes
             argumentLacing = helper.ReadEnum("lacing", LacingStrategy.Disabled);
             IsSetAsInput = helper.ReadBoolean("isSelectedInput", true);
             isFrozenExplicitly = helper.ReadBoolean("IsFrozen", false);
+            if (helper.HasAttribute("supportsPortLevelDataExtraction"))
+            {
+              supportsPortLevelDataExtraction = helper.ReadBoolean("supportsPortLevelDataExtraction");
+            }
 
             var portInfoProcessed = new HashSet<int>();
 
