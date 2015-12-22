@@ -970,7 +970,15 @@ namespace Dynamo.Graph.Nodes
                                       GetAstIdentifierForOutputIndex(index))));
         }
 
-        internal List<AssociativeNode> CreateLevelSelectionNodes(IEnumerable<AssociativeNode> inputAstNodes, ref List<AssociativeNode> idents)
+        /// <summary>
+        /// Create AST which extracts data from nested collection at the level specified by a port's InputDataLevel parameter.
+        /// </summary>
+        /// <param name="inputAstNodes">
+        /// A collection of AssociativeNode objects which represent the inputs to the data level extraction process.</param>
+        /// <param name="levelExtractionIdentifiers">
+        /// A collection of Identifier nodes containing the unique identifiers for our data extraction calls.</param>
+        /// <returns>A list of AssociativeNode objects corresponding in number to the number of inputs.</returns>
+        internal List<AssociativeNode> CreateLevelSelectionNodes(IEnumerable<AssociativeNode> inputAstNodes, ref List<AssociativeNode> levelExtractionIdentifiers)
         {
             var newAstNodes = new List<AssociativeNode>();
 
@@ -981,7 +989,7 @@ namespace Dynamo.Graph.Nodes
                 var func = new Func<object, int, IList>(DataGraph.DataGraph.GetDataAtLevel);
                 var funcNode = AstFactory.BuildFunctionCall(func, new List<AssociativeNode>() { node, intNode });
                 var identNode = AstFactory.BuildIdentifier(GUID + "_" + Guid.NewGuid() + "_level_" + count);
-                idents.Add(identNode);
+                levelExtractionIdentifiers.Add(identNode);
                 var binNode = AstFactory.BuildAssignment(identNode, funcNode);
                 newAstNodes.Add(binNode);
                 count++;
@@ -990,7 +998,17 @@ namespace Dynamo.Graph.Nodes
             return newAstNodes;
         }
 
-        internal AssociativeNode PromoteToDominantArray(int outIndex, int dominantLevel, AssociativeNode dominantDataNode)
+        /// <summary>
+        /// Create AST which superimposes a collection of data onto another collection at the specified level.
+        /// </summary>
+        /// <param name="outputIndex">
+        /// The index of the output node to whose identifier the result of the function call will be assigned.</param>
+        /// <param name="dominantLevel">
+        /// The InputDataLevel of the 'dominant' port.</param>
+        /// <param name="dominantDataNode">
+        /// An AssociativeNode representing the dominant array.</param>
+        /// <returns>An AssociativeNode representing the assignment of superimposition operation.</returns>
+        internal AssociativeNode PromoteToDominantArray(int outputIndex, int dominantLevel, AssociativeNode dominantDataNode)
         {
             // Create a node to generate a new array with nulls.
             // This will use the original value of the data passed into this
@@ -1002,9 +1020,9 @@ namespace Dynamo.Graph.Nodes
 
             // Create a function call node to do the superimposition.
             var superimposeNode = AstFactory.BuildFunctionCall(superimposeFunc, 
-                new List<AssociativeNode> {dominantDataNode, GetAstIdentifierForOutputIndex(outIndex), levelNode, boolNode });
+                new List<AssociativeNode> {dominantDataNode, GetAstIdentifierForOutputIndex(outputIndex), levelNode, boolNode });
 
-            var assign = AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(outIndex), superimposeNode);
+            var assign = AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(outputIndex), superimposeNode);
             return assign;
         }
 
