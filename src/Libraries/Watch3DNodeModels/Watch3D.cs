@@ -141,8 +141,6 @@ namespace Watch3DNodeModels
 
             ShouldDisplayPreviewCore = false;
             Camera = new Watch3DCamera();
-
-            SupportsPortLevelDataExtraction = false;
         }
 
         #endregion

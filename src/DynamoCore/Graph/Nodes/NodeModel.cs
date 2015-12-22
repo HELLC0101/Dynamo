@@ -810,7 +810,7 @@ namespace Dynamo.Graph.Nodes
 
             RaisesModificationEvents = true;
 
-            SupportsPortLevelDataExtraction = true;
+            SupportsPortLevelDataExtraction = false;
         }
 
         /// <summary>
