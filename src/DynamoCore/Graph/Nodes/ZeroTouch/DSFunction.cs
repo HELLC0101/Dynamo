@@ -19,9 +19,7 @@ namespace Dynamo.Graph.Nodes.ZeroTouch
 
         public DSFunction(FunctionDescriptor descriptor)
             : base(new ZeroTouchNodeController<FunctionDescriptor>(descriptor))
-        {
-            SupportsPortLevelDataExtraction = true;
-        }
+        { }
     }
 }
 

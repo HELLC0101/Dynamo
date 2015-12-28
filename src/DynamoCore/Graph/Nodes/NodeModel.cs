@@ -1029,7 +1029,7 @@ namespace Dynamo.Graph.Nodes
             // Create a node to generate a new array with nulls.
             // This will use the original value of the data passed into this
             // node before the levelling occurred.
-            var superimposeFunc = new Func<object, object, int, bool, object>(DataGraph.DataGraph.SuperimposeDataAtLevel);
+            var superimposeFunc = new Func<IList, IList, int, bool, object>(DataGraph.DataGraph.SuperimposeDataAtLevel);
 
             var boolNode = AstFactory.BuildBooleanNode(true);
             var levelNode = AstFactory.BuildIntNode(dominantLevel);

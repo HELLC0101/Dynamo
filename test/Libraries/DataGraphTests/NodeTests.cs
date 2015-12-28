@@ -339,7 +339,7 @@ namespace DataGraphTests
 			return new List<object>{arr1,arr2,new[]{arr3, arr3}};
 		}
 			
-		private IEnumerable JaggedTestArray(){
+		private IList JaggedTestArray(){
 			return new List<object>{ "foo", arr1, arr2 };
 		}
 

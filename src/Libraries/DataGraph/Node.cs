@@ -256,7 +256,7 @@ namespace DataGraph
         /// <param name="superimposeData">The data which will overwrite.</param>
         /// <param name="level">The level at which to begin the overwrite, specified from the leaves, starting at -1.</param>
         /// <param name="overwriteLowerLevelsWithNulls">If True, data at the specified level and below will be overwritten with nulls.</param>
-        public static object SuperimposeDataAtLevel([ArbitraryDimensionArrayImport]object data, [ArbitraryDimensionArrayImport]object superimposeData, 
+        public static object SuperimposeDataAtLevel(IList data, IList superimposeData, 
             int level, bool overwriteLowerLevelsWithNulls = true)
         {
             if (data == null || superimposeData == null)
