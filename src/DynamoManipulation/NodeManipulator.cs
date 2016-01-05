@@ -15,6 +15,7 @@ using Dynamo.Graph.Workspaces;
 using Dynamo.Models;
 using Dynamo.Visualization;
 using Dynamo.Wpf.ViewModels.Watch3D;
+using ProtoCore.AST.AssociativeAST;
 using ProtoCore.Mirror;
 using Point = Autodesk.DesignScript.Geometry.Point;
 using Vector = Autodesk.DesignScript.Geometry.Vector;
@@ -145,7 +146,9 @@ namespace Dynamo.Manipulation
         /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
-            DeleteGizmos();
+            if (Origin != null) Origin.Dispose();
+
+            if (newPosition != null) newPosition.Dispose();
         }
 
         /// <summary>
@@ -182,18 +185,22 @@ namespace Dynamo.Manipulation
 
             foreach (var item in gizmos)
             {
-                object hitObject;
-                if (item.HitTest(ray.GetOriginPoint(), ray.GetDirectionVector(), out hitObject))
+                using(var originPt = ray.GetOriginPoint())
+                using (var dirVec = ray.GetDirectionVector())
                 {
-                    GizmoInAction = item;
-
-                    var nodes = OnGizmoClick(item, hitObject).ToList();
-                    if(nodes.Any())
+                    object hitObject;
+                    if (item.HitTest(originPt, dirVec, out hitObject))
                     {
-                        WorkspaceModel.RecordModelsForModification(nodes);
+                        GizmoInAction = item;
+
+                        var nodes = OnGizmoClick(item, hitObject).ToList();
+                        if (nodes.Any())
+                        {
+                            WorkspaceModel.RecordModelsForModification(nodes);
+                        }
+                        newPosition = Origin;
+                        return;
                     }
-                    newPosition = Origin;
-                    return;
                 }
             }
         }
@@ -346,6 +353,13 @@ namespace Dynamo.Manipulation
             CommandExecutive.ExecuteCommand(command, UniqueId, ExtensionName);
 
             var inputNode = WorkspaceModel.Nodes.FirstOrDefault(node => node.GUID == command.ModelGuid) as DoubleSlider;
+
+            if (inputNode != null)
+            {
+                // Assign the input slider to the default value of the node's input port
+                var doubleNode = Node.InPorts[inputPortIndex].DefaultValue as DoubleNode;
+                if (doubleNode != null) inputNode.Value = doubleNode.Value;
+            }
             return inputNode;
         }
 
@@ -471,11 +485,15 @@ namespace Dynamo.Manipulation
             {
                 item.UnhighlightGizmo();
 
-                object hitObject;
-                if (item.HitTest(clickRay.GetOriginPoint(), clickRay.GetDirectionVector(), out hitObject))
+                using (var originPt = clickRay.GetOriginPoint())
+                using (var dirVec = clickRay.GetDirectionVector())
                 {
-                    item.HighlightGizmo();
-                    return;
+                    object hitObject;
+                    if (item.HitTest(originPt, dirVec, out hitObject))
+                    {
+                        item.HighlightGizmo();
+                        return;
+                    }
                 }
             }
         }
@@ -488,6 +506,7 @@ namespace Dynamo.Manipulation
         {
             Dispose(true);
 
+            DeleteGizmos();
             DetachHandlers();
         }
 
@@ -547,16 +566,20 @@ namespace Dynamo.Manipulation
 
         public static Line ToLine(this IRay ray)
         {
-            var origin = ray.Origin.ToPoint();
-            var direction = ray.Direction.ToVector();
-            return Line.ByStartPointEndPoint(origin, origin.Add(direction.Scale(rayScaleFactor)));
+            using(var origin = ray.Origin.ToPoint())
+            using (var direction = ray.Direction.ToVector())
+            {
+                return Line.ByStartPointEndPoint(origin, origin.Add(direction.Scale(rayScaleFactor)));
+            }
         }
 
         public static Line ToOriginCenteredLine(this IRay ray)
         {
-            var origin = ray.Origin.ToPoint();
-            var direction = ray.Direction.ToVector();
-            return ToOriginCenteredLine(origin, direction);
+            using(var origin = ray.Origin.ToPoint())
+            using (var direction = ray.Direction.ToVector())
+            {
+                return ToOriginCenteredLine(origin, direction);
+            }
         }
 
         public static Line ToOriginCenteredLine(Point origin, Vector axis)

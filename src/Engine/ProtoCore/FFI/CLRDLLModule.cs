@@ -502,13 +502,12 @@ namespace ProtoFFI
                 return false;
 
             string name = m.Name;
-            string propertyName;
             int nParams = 0;
             if (name.StartsWith("get_"))
-                propertyName = name.Remove(0, 4);
+                name.Remove(0, 4);
             else if (name.StartsWith("set_"))
             {
-                propertyName = name.Remove(0, 4);
+                name.Remove(0, 4);
                 nParams = 1;
             }
             else
@@ -988,13 +987,13 @@ namespace ProtoFFI
                 if (!type.IsGenericType && type.IsPublic && !exttype.IsAssignableFrom(type) && !CLRModuleType.SupressesImport(type))
                 {
 
-                    CLRModuleType importedType = CLRModuleType.GetInstance(type, this, alias);
+                    CLRModuleType.GetInstance(type, this, alias);
                     Type[] nestedTypes = type.GetNestedTypes();
                     if (null != nestedTypes && nestedTypes.Length > 0)
                     {
                         foreach (var item in nestedTypes)
                         {
-                            importedType = CLRModuleType.GetInstance(item, this, string.Empty);
+                            CLRModuleType.GetInstance(item, this, string.Empty);
                         }
                     }
                 }
