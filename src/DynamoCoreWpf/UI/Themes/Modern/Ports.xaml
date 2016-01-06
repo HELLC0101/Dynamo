@@ -54,13 +54,17 @@
                               IsEnabled="{Binding Path=DefaultValueEnabled, Mode=OneWay}"
                               IsChecked="{Binding Path=UsingDefaultValue, Mode=TwoWay}" />
                     <MenuItem Header="Dominant"
-                              Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                              Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                               IsCheckable="True"
                               IsChecked ="{Binding Path=IsDominantInput, Mode=TwoWay}"
                               IsEnabled="True"/>
-                        <MenuItem Header="Level"
+                    <MenuItem Header="Level"
                               Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
                         <TextBox Text="{Binding InputDataLevel, Mode=TwoWay}" Width="100"/>
+                    </MenuItem>
+                    <MenuItem Header ="Replication Guides"
+                              Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+                        <TextBox Text ="{Binding ReplicationGuides, Mode=TwoWay}" Width="100"/>
                     </MenuItem>
                 </ContextMenu>
             </Grid.ContextMenu>
@@ -153,6 +157,16 @@
                        Background="{x:Null}"
                        Foreground="#555555">
                 </TextBlock>
+                <TextBlock Name="ReplicationGuidesTb"
+                       Style="{StaticResource SZoomFadeText}"
+                       Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                       Text="{Binding Path=ReplicationGuides}"
+                       VerticalAlignment="Center"
+                       FontSize="13"
+                       FontFamily="{StaticResource OpenSansRegular}"
+                       Background="{x:Null}"
+                       Padding="0,7,6,7"
+                       Foreground="#888888"/>
                 <TextBlock Name="PortLevelTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortLevelText}"
@@ -166,7 +180,7 @@
                 <TextBlock Name="PortDominantTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortDominantText}"
-                       Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                       Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                        VerticalAlignment="Center"
                        FontSize="13"
                        FontFamily="{StaticResource OpenSansRegular}"

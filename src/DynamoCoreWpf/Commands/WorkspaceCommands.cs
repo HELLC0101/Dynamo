@@ -287,7 +287,7 @@ namespace Dynamo.ViewModels
                 // return First lacing.
 
                 if(!DynamoSelection.Instance.Selection.Any())
-                    return LacingStrategy.First;
+                    return LacingStrategy.Shortest;
 
                 return DynamoSelection.Instance.Selection.OfType<NodeModel>()
                     .GroupBy(node => node.ArgumentLacing)

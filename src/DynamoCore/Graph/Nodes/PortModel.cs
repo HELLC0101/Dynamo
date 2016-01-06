@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml;
@@ -31,11 +32,14 @@ namespace Dynamo.Graph.Nodes
         #endregion
 
         #region private fields
+
         ObservableCollection<ConnectorModel> connectors = new ObservableCollection<ConnectorModel>();
         private bool usingDefaultValue;
         private PortData portData;
         private int inputDataLevel;
         private bool isDominantInput;
+        private List<int> replicationGuides = new List<int>();
+        private bool isLongestReplication = false;
 
         #endregion
 
@@ -187,6 +191,19 @@ namespace Dynamo.Graph.Nodes
             }
         }
 
+        public List<int> ReplicationGuides
+        {
+            get { return replicationGuides; }
+        }
+
+        public bool IsLongestReplication
+        {
+            get
+            {
+                return isLongestReplication;
+            }
+        }
+
         #endregion
 
         public PortModel(PortType portType, NodeModel owner, PortData data)
@@ -292,6 +309,13 @@ namespace Dynamo.Graph.Nodes
         }
 
         #endregion
+
+        public void SetReplicationGuides(List<int> guides, bool isLongest)
+        {
+            isLongestReplication = isLongest;
+            replicationGuides = guides;
+            Owner.OnNodeModified();
+        }
     }
 
     public class PortData

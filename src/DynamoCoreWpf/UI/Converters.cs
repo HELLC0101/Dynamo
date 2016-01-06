@@ -1354,8 +1354,6 @@ namespace Dynamo.Controls
                     return "";
                 case LacingStrategy.CrossProduct:
                     return "XXX";
-                case LacingStrategy.First:
-                    return "|";
                 case LacingStrategy.Longest:
                     return @"||\";
                 case LacingStrategy.Shortest:
@@ -1383,8 +1381,6 @@ namespace Dynamo.Controls
                     return Resources.LacingDisabledToolTip;
                 case LacingStrategy.CrossProduct:
                     return Resources.LacingCrossProductToolTip;
-                case LacingStrategy.First:
-                    return Resources.LacingFirstToolTip;
                 case LacingStrategy.Longest:
                     return Resources.LacingLongestToolTip;
                 case LacingStrategy.Shortest:

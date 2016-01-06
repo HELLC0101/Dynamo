@@ -31,7 +31,7 @@ namespace Dynamo.Graph.Nodes
         #region private members
 
         private bool overrideNameWithNickName;
-        private LacingStrategy argumentLacing = LacingStrategy.First;
+        private LacingStrategy argumentLacing = LacingStrategy.Shortest;
         private bool displayLabels;
         private bool isUpstreamVisible;
         private bool isVisible;
@@ -351,6 +351,9 @@ namespace Dynamo.Graph.Nodes
                 if (argumentLacing != value)
                 {
                     argumentLacing = value;
+
+                    SetReplicationGuides();
+
                     RaisePropertyChanged("ArgumentLacing");
 
                     // Mark node for update
@@ -1044,32 +1047,28 @@ namespace Dynamo.Graph.Nodes
         {
         }
 
-        /// <summary>
-        /// Apppend replication guide to the input parameter based on lacing
-        /// strategy.
-        /// </summary>
-        /// <param name="inputs"></param>
-        /// <returns></returns>
-        public void AppendReplicationGuides(List<AssociativeNode> inputs)
+        public void SetReplicationGuides()
         {
-            if (inputs == null || !inputs.Any())
-                return;
-
             switch (ArgumentLacing)
             {
+                case LacingStrategy.Disabled:
+                case LacingStrategy.Shortest:
+                    for (var i = 0; i < InPorts.Count(); ++i)
+                    {
+                        InPorts[i].SetReplicationGuides(new List<int>(), false);
+                    }
+                    break;
+
                 // For Longest lacing, all inputs
                 // get the the <1L> replication guide.
                 case LacingStrategy.Longest:
 
-                    for (var i = 0; i < inputs.Count(); ++i)
+                    for (var i = 0; i < InPorts.Count(); ++i)
                     {
-                        inputs[i] = AstFactory.AddReplicationGuide(
-                                                inputs[i],
-                                                new List<int> { 1 },
-                                                true);
+                        InPorts[i].SetReplicationGuides(new List<int> {1}, true);
                     }
                     break;
-                
+
                 // For Cross Product lacing, inputs get
                 // an ascending set of replication guides.
                 // The dominantIndex shall have the lowest replication guide.
@@ -1081,16 +1080,9 @@ namespace Dynamo.Graph.Nodes
                     // replication guide (1), will be reserved
                     // for the dominant input.
                     var guide = 2;
-                    for (var i = 0; i < inputs.Count(); ++i)
+                    for (var i = 0; i < InPorts.Count(); ++i)
                     {
-                        if (i == dominantIndex)
-                        {
-                            
-                        }
-                        inputs[i] = AstFactory.AddReplicationGuide(
-                                                inputs[i],
-                                                new List<int> { i == dominantIndex? 1 : guide },
-                                                false);
+                        InPorts[i].SetReplicationGuides(new List<int> { i == dominantIndex ? 1 : guide }, false);
 
                         if (i != dominantIndex)
                         {
@@ -1098,6 +1090,27 @@ namespace Dynamo.Graph.Nodes
                         }
                     }
                     break;
+            }
+
+        }
+
+        /// <summary>
+        /// Apppend replication guide to the input parameter based on lacing
+        /// strategy.
+        /// </summary>
+        /// <param name="inputs"></param>
+        /// <returns></returns>
+        public void AppendReplicationGuides(List<AssociativeNode> inputs)
+        {
+            if (inputs == null || !inputs.Any())
+                return;
+
+            for (var i = 0; i < inputs.Count(); ++i)
+            {
+                inputs[i] = AstFactory.AddReplicationGuide(
+                                        inputs[i], 
+                                        inPorts[i].ReplicationGuides,
+                                        inPorts[i].IsLongestReplication);
             }
         }
         #endregion
@@ -1954,6 +1967,8 @@ namespace Dynamo.Graph.Nodes
                 ReportPosition();
 
             }
+
+            SetReplicationGuides();
         }
 
         #endregion
@@ -2232,7 +2247,6 @@ namespace Dynamo.Graph.Nodes
     public enum LacingStrategy
     {
         Disabled,
-        First,
         Shortest,
         Longest,
         CrossProduct

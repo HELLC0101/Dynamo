@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using Dynamo.Graph;
 using Dynamo.Graph.Nodes;
@@ -129,11 +131,14 @@ namespace Dynamo.ViewModels
                 // Set the new dominant port
                 _port.IsDominantInput = true;
 
+                _port.Owner.SetReplicationGuides();
+
                 // Update the UI.
                 foreach (var port in _node.InPorts)
                 {
                     port.RaisePropertyChanged("IsDominantInput");
                     port.RaisePropertyChanged("PortDominantText");
+                    port.RaisePropertyChanged("ReplicationGuides");
                 }
 
                 // Re-evaluate
@@ -189,6 +194,53 @@ namespace Dynamo.ViewModels
             get { return ShouldDisplayPortLevelExtractionSettings || DefaultValueEnabled; }
         }
 
+        public bool ShouldShowReplicationGuides
+        {
+            get { return PortModel.PortType == PortType.Input && 
+                    PortModel.Owner.ArgumentLacing != LacingStrategy.Disabled; }
+        }
+
+        public string ReplicationGuides
+        {
+            get
+            {
+                var sb = new StringBuilder();
+                foreach (var guide in PortModel.ReplicationGuides)
+                {
+                    sb.Append("<");
+                    sb.Append(guide.ToString(CultureInfo.InvariantCulture));
+                    if (PortModel.IsLongestReplication)
+                    {
+                        sb.Append("L");
+                    }
+                    sb.Append(">");
+                }
+                return sb.ToString();
+            }
+            set
+            {
+                var allLongest = true;
+                var newGuides = new List<int>();
+                foreach (var guideStr in value.Split(new char[] {'<', '>'}))
+                {
+                    allLongest = guideStr.Contains("L");
+
+                    var guide = 1;
+                    if(int.TryParse(allLongest? guideStr.Split('L').First():guideStr, out guide))
+                    {
+                        if (guide < 1)
+                        {
+                            continue;
+                        }
+                        newGuides.Add(guide);
+                    };
+                }
+
+                PortModel.SetReplicationGuides(newGuides, allLongest);
+                RaisePropertyChanged("ReplicationGuides");
+            }
+        }
+        
         #endregion
 
         #region events
@@ -221,6 +273,9 @@ namespace Dynamo.ViewModels
                     break;
                 case "SupportsPortLevelDataExtraction":
                     RaisePropertyChanged("ShouldDisplayPortLevelExtractionSettings");
+                    break;
+                case "ArgumentLacing":
+                    RaisePropertyChanged("ReplicationGuides");
                     break;
             }
         }

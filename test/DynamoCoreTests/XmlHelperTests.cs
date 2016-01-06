@@ -179,7 +179,7 @@ namespace Dynamo.Tests
             XmlElementHelper reader = new XmlElementHelper(element);
             Assert.AreEqual(strategy, reader.ReadEnum("ValidName", LacingStrategy.Disabled));
 
-            LacingStrategy defaultValue = LacingStrategy.First;
+            LacingStrategy defaultValue = LacingStrategy.Shortest;
             Assert.AreEqual(defaultValue, reader.ReadEnum("ValidName2", defaultValue));
         }
     }
