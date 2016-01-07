@@ -70,6 +70,11 @@
                 </dynui:DynamoToolTip>
             </Grid.ToolTip>
 
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
             <!--
                 We could have changed the Grid opacity directly here but didn't
                 The reason is that if the opacity of the Grid is modified, the 
@@ -85,7 +90,7 @@
             -->
             <Rectangle Fill="Transparent"                                      
                        SnapsToDevicePixels="True"                                         
-                       IsHitTestVisible="True">                                                         
+                       IsHitTestVisible="True" Grid.Column="0" Grid.ColumnSpan="2">                                                         
                 <interactivity:Interaction.Triggers>
                     <views:HandlingEventTrigger EventName="MouseEnter">
                         <interactivity:InvokeCommandAction Command="{Binding Path=MouseEnterCommand}" CommandParameter="{Binding}" />
@@ -108,7 +113,7 @@
                        Fill="White"
                        MinWidth="26"
                        Margin="0,0,0,1"
-                       IsHitTestVisible="True">
+                       IsHitTestVisible="True" Grid.Column="0" Grid.ColumnSpan="2">
                 <interactivity:Interaction.Triggers>
                     <views:HandlingEventTrigger EventName="MouseEnter">
                         <interactivity:InvokeCommandAction Command="{Binding Path=MouseEnterCommand}" CommandParameter="{Binding}" />
@@ -136,7 +141,7 @@
                 </Rectangle.Style>
             </Rectangle>
 
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
                 <TextBlock Name="portNameTb"
                        Width="Auto"
                        Style="{StaticResource SZoomFadeText}"
@@ -149,12 +154,7 @@
                        Background="{x:Null}"
                        Foreground="#555555">
                 </TextBlock>
-                
-                <Expander ExpandDirection="Left"
-                          Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
-                    <dynamoWpf:ReplicationGuideControl/>
-                </Expander>
-                
+
                 <TextBlock Name="PortLevelTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortLevelText}"
@@ -166,6 +166,13 @@
                        Padding="0,7,6,7"
                        Foreground="#888888"/>
             </StackPanel>
+
+            <Expander ExpandDirection="Right" Grid.Column="1"
+                          HorizontalAlignment="Right"
+                          Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+                <dynamoWpf:ReplicationGuideControl/>
+            </Expander>
+            
         </Grid>
     
     </DataTemplate>
