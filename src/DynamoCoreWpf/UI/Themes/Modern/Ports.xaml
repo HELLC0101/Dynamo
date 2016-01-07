@@ -6,7 +6,8 @@
                       xmlns:interactivity="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
                       xmlns:views="clr-namespace:Dynamo.UI.Views;assembly=DynamoCoreWpf"
                       xmlns:ui="clr-namespace:Dynamo.UI;assembly=DynamoCoreWpf"
-                      xmlns:p="clr-namespace:Dynamo.Wpf.Properties;assembly=DynamoCoreWpf">
+                      xmlns:p="clr-namespace:Dynamo.Wpf.Properties;assembly=DynamoCoreWpf"
+                      xmlns:dynamoWpf="clr-namespace:Dynamo.Wpf.Controls;assembly=DynamoCoreWpf">
 
     <!-- Templates
         
@@ -62,10 +63,10 @@
                               Visibility="{Binding ShouldDisplayPortLevelExtractionSettings, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
                         <TextBox Text="{Binding InputDataLevel, Mode=TwoWay}" Width="100"/>
                     </MenuItem>
-                    <MenuItem Header ="Replication Guides"
+                    <!--<MenuItem Header ="Replication Guides"
                               Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
                         <TextBox Text ="{Binding ReplicationGuides, Mode=TwoWay}" Width="100"/>
-                    </MenuItem>
+                    </MenuItem>-->
                 </ContextMenu>
             </Grid.ContextMenu>
 
@@ -157,16 +158,8 @@
                        Background="{x:Null}"
                        Foreground="#555555">
                 </TextBlock>
-                <TextBlock Name="ReplicationGuidesTb"
-                       Style="{StaticResource SZoomFadeText}"
-                       Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
-                       Text="{Binding Path=ReplicationGuides}"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       FontFamily="{StaticResource OpenSansRegular}"
-                       Background="{x:Null}"
-                       Padding="0,7,6,7"
-                       Foreground="#888888"/>
+                <dynamoWpf:ReplicationGuideControl 
+                    Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"/>
                 <TextBlock Name="PortLevelTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortLevelText}"

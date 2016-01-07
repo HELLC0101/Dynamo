@@ -1055,7 +1055,8 @@ namespace Dynamo.Graph.Nodes
                 case LacingStrategy.Shortest:
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
-                        InPorts[i].SetReplicationGuides(new List<int>(), false);
+                        InPorts[i].ReplicationGuides.Clear();
+                        InPorts[i].IsLongestReplication = false;
                     }
                     break;
 
@@ -1065,7 +1066,9 @@ namespace Dynamo.Graph.Nodes
 
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
-                        InPorts[i].SetReplicationGuides(new List<int> {1}, true);
+                        InPorts[i].ReplicationGuides.Clear();
+                        InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(1));
+                        InPorts[i].IsLongestReplication = true;
                     }
                     break;
 
@@ -1082,7 +1085,9 @@ namespace Dynamo.Graph.Nodes
                     var guide = 2;
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
-                        InPorts[i].SetReplicationGuides(new List<int> { i == dominantIndex ? 1 : guide }, false);
+                        InPorts[i].ReplicationGuides.Clear();
+                        InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(i == dominantIndex ? 1 : guide ));
+                        InPorts[i].IsLongestReplication = false;
 
                         if (i != dominantIndex)
                         {
@@ -1091,7 +1096,6 @@ namespace Dynamo.Graph.Nodes
                     }
                     break;
             }
-
         }
 
         /// <summary>
@@ -1109,7 +1113,7 @@ namespace Dynamo.Graph.Nodes
             {
                 inputs[i] = AstFactory.AddReplicationGuide(
                                         inputs[i], 
-                                        inPorts[i].ReplicationGuides,
+                                        inPorts[i].ReplicationGuides.Select(g=>g.Guide).ToList(),
                                         inPorts[i].IsLongestReplication);
             }
         }

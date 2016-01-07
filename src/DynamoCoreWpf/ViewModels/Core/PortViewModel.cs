@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Windows;
-using Dynamo.Graph;
 using Dynamo.Graph.Nodes;
-using Dynamo.Models;
 using Dynamo.Utilities;
+using Dynamo.Wpf.ViewModels.Core;
 
 namespace Dynamo.ViewModels
 {
     public partial class PortViewModel : ViewModelBase
     {
-
         #region Properties/Fields
 
         private readonly PortModel _port;
@@ -131,14 +129,13 @@ namespace Dynamo.ViewModels
                 // Set the new dominant port
                 _port.IsDominantInput = true;
 
-                _port.Owner.SetReplicationGuides();
-
                 // Update the UI.
                 foreach (var port in _node.InPorts)
                 {
                     port.RaisePropertyChanged("IsDominantInput");
                     port.RaisePropertyChanged("PortDominantText");
                     port.RaisePropertyChanged("ReplicationGuides");
+                    port.RaisePropertyChanged("IsLongestReplication");
                 }
 
                 // Re-evaluate
@@ -200,47 +197,21 @@ namespace Dynamo.ViewModels
                     PortModel.Owner.ArgumentLacing != LacingStrategy.Disabled; }
         }
 
-        public string ReplicationGuides
+        public bool IsLongestReplication
         {
-            get
-            {
-                var sb = new StringBuilder();
-                foreach (var guide in PortModel.ReplicationGuides)
-                {
-                    sb.Append("<");
-                    sb.Append(guide.ToString(CultureInfo.InvariantCulture));
-                    if (PortModel.IsLongestReplication)
-                    {
-                        sb.Append("L");
-                    }
-                    sb.Append(">");
-                }
-                return sb.ToString();
-            }
+            get { return _port.IsLongestReplication; }
             set
             {
-                var allLongest = true;
-                var newGuides = new List<int>();
-                foreach (var guideStr in value.Split(new char[] {'<', '>'}))
-                {
-                    allLongest = guideStr.Contains("L");
-
-                    var guide = 1;
-                    if(int.TryParse(allLongest? guideStr.Split('L').First():guideStr, out guide))
-                    {
-                        if (guide < 1)
-                        {
-                            continue;
-                        }
-                        newGuides.Add(guide);
-                    };
-                }
-
-                PortModel.SetReplicationGuides(newGuides, allLongest);
-                RaisePropertyChanged("ReplicationGuides");
+                _port.IsLongestReplication = value;
+                RaisePropertyChanged("IsLongestReplication");
             }
         }
-        
+
+        //public ObservableCollection<int> ReplicationGuides
+        //{
+        //    get { return _port.ReplicationGuides; }
+        //}
+
         #endregion
 
         #region events
@@ -255,7 +226,7 @@ namespace Dynamo.ViewModels
             _port = port;
            
             _port.PropertyChanged += _port_PropertyChanged;
-            _node.PropertyChanged += _node_PropertyChanged;          
+            _node.PropertyChanged += _node_PropertyChanged;     
         }
 
         void _node_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -276,6 +247,7 @@ namespace Dynamo.ViewModels
                     break;
                 case "ArgumentLacing":
                     RaisePropertyChanged("ReplicationGuides");
+                    RaisePropertyChanged("IsLongestReplication");
                     break;
             }
         }
@@ -307,6 +279,9 @@ namespace Dynamo.ViewModels
                     break;
                 case "MarginThickness":
                     RaisePropertyChanged("MarginThickness");
+                    break;
+                case "ReplicationGuides":
+                    RaisePropertyChanged("ReplicationGuides");
                     break;
             }
             
@@ -352,6 +327,23 @@ namespace Dynamo.ViewModels
         {
             if (MouseLeftButtonDown != null)
                 MouseLeftButtonDown(parameter, null);
+        }
+
+        internal void AddReplicationGuide()
+        {
+            _port.ReplicationGuides.Add(new ReplicationGuideData(1));
+            _port.Owner.OnNodeModified();
+        }
+
+        internal void RemoveReplicationGuide()
+        {
+            if (_port.ReplicationGuides.Count == 0)
+            {
+                return;
+            }
+
+            _port.ReplicationGuides.RemoveAt(_port.ReplicationGuides.Count - 1);
+            _port.Owner.OnNodeModified();
         }
     }
 }

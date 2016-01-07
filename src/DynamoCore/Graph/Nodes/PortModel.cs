@@ -38,7 +38,7 @@ namespace Dynamo.Graph.Nodes
         private PortData portData;
         private int inputDataLevel;
         private bool isDominantInput;
-        private List<int> replicationGuides = new List<int>();
+        private ObservableCollection<ReplicationGuideData> replicationGuides = new ObservableCollection<ReplicationGuideData>();
         private bool isLongestReplication = false;
 
         #endregion
@@ -191,9 +191,10 @@ namespace Dynamo.Graph.Nodes
             }
         }
 
-        public List<int> ReplicationGuides
+        public ObservableCollection<ReplicationGuideData> ReplicationGuides
         {
             get { return replicationGuides; }
+            set { replicationGuides = value; }
         }
 
         public bool IsLongestReplication
@@ -202,6 +203,7 @@ namespace Dynamo.Graph.Nodes
             {
                 return isLongestReplication;
             }
+            set { isLongestReplication = value; }
         }
 
         #endregion
@@ -309,13 +311,6 @@ namespace Dynamo.Graph.Nodes
         }
 
         #endregion
-
-        public void SetReplicationGuides(List<int> guides, bool isLongest)
-        {
-            isLongestReplication = isLongest;
-            replicationGuides = guides;
-            Owner.OnNodeModified();
-        }
     }
 
     public class PortData
@@ -336,6 +331,16 @@ namespace Dynamo.Graph.Nodes
             DefaultValue = defaultValue;
             LineIndex = -1;
             Height = 0;
+        }
+    }
+
+    public class ReplicationGuideData
+    {
+        public int Guide { get; set; }
+
+        public ReplicationGuideData(int guide)
+        {
+            Guide = guide;
         }
     }
 }
