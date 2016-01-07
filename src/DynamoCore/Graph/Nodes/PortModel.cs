@@ -39,7 +39,6 @@ namespace Dynamo.Graph.Nodes
         private int inputDataLevel;
         private bool isDominantInput;
         private ObservableCollection<ReplicationGuideData> replicationGuides = new ObservableCollection<ReplicationGuideData>();
-        private bool isLongestReplication = false;
 
         #endregion
 
@@ -195,15 +194,6 @@ namespace Dynamo.Graph.Nodes
         {
             get { return replicationGuides; }
             set { replicationGuides = value; }
-        }
-
-        public bool IsLongestReplication
-        {
-            get
-            {
-                return isLongestReplication;
-            }
-            set { isLongestReplication = value; }
         }
 
         #endregion

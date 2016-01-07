@@ -63,6 +63,8 @@ namespace Dynamo.Graph.Nodes
         private readonly Dictionary<PortModel, PortData> portDataDict = new Dictionary<PortModel, PortData>();
 
         private bool supportsPortLevelDataExtraction;
+        private bool isLongestReplication = false;
+
         #endregion
 
         #region public members
@@ -689,6 +691,18 @@ namespace Dynamo.Graph.Nodes
             }
         }
 
+        public bool IsLongestReplication
+        {
+            get
+            {
+                return isLongestReplication;
+            }
+            set
+            {
+                isLongestReplication = value;
+            }
+        }
+
         #endregion
 
         #region freeze execution
@@ -1053,10 +1067,13 @@ namespace Dynamo.Graph.Nodes
             {
                 case LacingStrategy.Disabled:
                 case LacingStrategy.Shortest:
+
+                    IsLongestReplication = false;
+
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
                         InPorts[i].ReplicationGuides.Clear();
-                        InPorts[i].IsLongestReplication = false;
+                        
                     }
                     break;
 
@@ -1064,11 +1081,13 @@ namespace Dynamo.Graph.Nodes
                 // get the the <1L> replication guide.
                 case LacingStrategy.Longest:
 
+                    IsLongestReplication = true;
+
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
                         InPorts[i].ReplicationGuides.Clear();
                         InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(1));
-                        InPorts[i].IsLongestReplication = true;
+                        
                     }
                     break;
 
@@ -1076,6 +1095,8 @@ namespace Dynamo.Graph.Nodes
                 // an ascending set of replication guides.
                 // The dominantIndex shall have the lowest replication guide.
                 case LacingStrategy.CrossProduct:
+
+                    IsLongestReplication = false;
 
                     var dominantIndex = inPorts.First(p => p.IsDominantInput).Index;
 
@@ -1087,7 +1108,7 @@ namespace Dynamo.Graph.Nodes
                     {
                         InPorts[i].ReplicationGuides.Clear();
                         InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(i == dominantIndex ? 1 : guide ));
-                        InPorts[i].IsLongestReplication = false;
+                        
 
                         if (i != dominantIndex)
                         {
@@ -1114,7 +1135,7 @@ namespace Dynamo.Graph.Nodes
                 inputs[i] = AstFactory.AddReplicationGuide(
                                         inputs[i], 
                                         inPorts[i].ReplicationGuides.Select(g=>g.Guide).ToList(),
-                                        inPorts[i].IsLongestReplication);
+                                        IsLongestReplication);
             }
         }
         #endregion

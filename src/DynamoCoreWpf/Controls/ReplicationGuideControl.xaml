@@ -50,9 +50,10 @@
                     Click="RemoveReplicationGuideButton_OnClick"
                     VerticalAlignment="Center"/>
             <CheckBox Content="L" 
-                      ToolTip="Longest Lacing."
-                    IsChecked="{Binding IsLongestReplication, Mode=TwoWay}" 
-                    VerticalAlignment="Center"/>
+                      ToolTip="Longest Replication"
+                      IsChecked="{Binding IsLongestReplication, Mode=TwoWay}" 
+                      Style="{x:Null}"
+                      VerticalAlignment="Center"/>
             <ListBox Background="{x:Null}" 
                      BorderBrush="{x:Null}" 
                      ItemsSource="{Binding Path=PortModel.ReplicationGuides, Mode=TwoWay}"
@@ -60,10 +61,13 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="sys:Int32">
                         <xctk:IntegerUpDown Value="{Binding Path=Guide, Mode=TwoWay}"
+                                            FontSize="8"
+                                            VerticalContentAlignment="Center"
                                             Padding="0"
                                             Minimum="1" 
                                             Width="40" 
-                                            VerticalAlignment="Center" ValueChanged="UpDownBase_OnValueChanged"/>
+                                            VerticalAlignment="Center" 
+                                            ValueChanged="UpDownBase_OnValueChanged"/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

@@ -149,8 +149,12 @@
                        Background="{x:Null}"
                        Foreground="#555555">
                 </TextBlock>
-                <dynamoWpf:ReplicationGuideControl 
-                    Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"/>
+                
+                <Expander ExpandDirection="Left"
+                          Visibility="{Binding ShouldShowReplicationGuides, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
+                    <dynamoWpf:ReplicationGuideControl/>
+                </Expander>
+                
                 <TextBlock Name="PortLevelTb"
                        Style="{StaticResource SZoomFadeText}"
                        Text="{Binding Path=PortLevelText}"

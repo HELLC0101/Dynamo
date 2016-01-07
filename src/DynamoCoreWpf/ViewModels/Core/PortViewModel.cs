@@ -162,14 +162,17 @@ namespace Dynamo.ViewModels
 
         public bool IsLongestReplication
         {
-            get { return _port.IsLongestReplication; }
+            get { return _port.Owner.IsLongestReplication; }
             set
             {
-                _port.IsLongestReplication = value;
-                RaisePropertyChanged("IsLongestReplication");
+                _port.Owner.IsLongestReplication = value;
+                foreach (var p in _node.InPorts)
+                {
+                    p.RaisePropertyChanged("IsLongestReplication");
+                }
+                _port.Owner.OnNodeModified();
             }
         }
-
         #endregion
 
         #region events
@@ -205,7 +208,6 @@ namespace Dynamo.ViewModels
                     break;
                 case "ArgumentLacing":
                     RaisePropertyChanged("ReplicationGuides");
-                    RaisePropertyChanged("IsLongestReplication");
                     break;
             }
         }
