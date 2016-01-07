@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using Dynamo.Graph.Nodes;
 using Dynamo.Utilities;
-using Dynamo.Wpf.ViewModels.Core;
 
 namespace Dynamo.ViewModels
 {
@@ -115,39 +111,6 @@ namespace Dynamo.ViewModels
 
         }
 
-        public bool IsDominantInput
-        {
-            get { return _port.IsDominantInput; }
-            set
-            {
-                if (!value) return;
-
-                // Un-set the current dominant
-                var currentDominant = _port.Owner.InPorts.FirstOrDefault(p => p.IsDominantInput);
-                currentDominant.IsDominantInput = false;
-
-                // Set the new dominant port
-                _port.IsDominantInput = true;
-
-                // Update the UI.
-                foreach (var port in _node.InPorts)
-                {
-                    port.RaisePropertyChanged("IsDominantInput");
-                    port.RaisePropertyChanged("PortDominantText");
-                    port.RaisePropertyChanged("ReplicationGuides");
-                    port.RaisePropertyChanged("IsLongestReplication");
-                }
-
-                // Re-evaluate
-                _port.Owner.OnNodeModified();
-            }
-        }
-
-        public string PortDominantText
-        {
-            get { return IsDominantInput ? "D" : string.Empty; }
-        }
-
         public string InputDataLevel
         {
             get { return _port.InputDataLevel.ToString(CultureInfo.InvariantCulture); }
@@ -206,11 +169,6 @@ namespace Dynamo.ViewModels
                 RaisePropertyChanged("IsLongestReplication");
             }
         }
-
-        //public ObservableCollection<int> ReplicationGuides
-        //{
-        //    get { return _port.ReplicationGuides; }
-        //}
 
         #endregion
 
