@@ -324,9 +324,18 @@ namespace Dynamo.Graph.Nodes
         }
     }
 
+    [Serializable]
     public class ReplicationGuideData
     {
         public int Guide { get; set; }
+
+        /// <summary>
+        /// Default constructor for serialization.
+        /// </summary>
+        public ReplicationGuideData()
+        {
+            
+        }
 
         public ReplicationGuideData(int guide)
         {

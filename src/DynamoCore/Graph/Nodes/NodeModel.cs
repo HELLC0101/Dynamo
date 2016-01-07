@@ -12,15 +12,17 @@ using Dynamo.Engine;
 using Dynamo.Engine.CodeGeneration;
 using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes.CustomNodes;
-using Dynamo.Graph.Nodes.ZeroTouch;
 using Dynamo.Migration;
 using Dynamo.Scheduler;
 using Dynamo.Selection;
 using Dynamo.Utilities;
 using Dynamo.Visualization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ProtoCore.AST.AssociativeAST;
 using ProtoCore.DSASM;
 using ProtoCore.Mirror;
+using RestSharp.Serializers;
 using String = System.String;
 using StringNode = ProtoCore.AST.AssociativeAST.StringNode;
 
@@ -353,8 +355,6 @@ namespace Dynamo.Graph.Nodes
                 if (argumentLacing != value)
                 {
                     argumentLacing = value;
-
-                    SetReplicationGuides();
 
                     RaisePropertyChanged("ArgumentLacing");
 
@@ -1061,6 +1061,11 @@ namespace Dynamo.Graph.Nodes
         {
         }
 
+        /// <summary>
+        /// Set the replication guides for the node's ports based on the LacingStrategy for the node.
+        /// This is used to provide backward support for node's which do not have saved values 
+        /// for their replication guides.
+        /// </summary>
         public void SetReplicationGuides()
         {
             switch (ArgumentLacing)
@@ -1073,7 +1078,7 @@ namespace Dynamo.Graph.Nodes
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
                         InPorts[i].ReplicationGuides.Clear();
-                        
+
                     }
                     break;
 
@@ -1087,7 +1092,7 @@ namespace Dynamo.Graph.Nodes
                     {
                         InPorts[i].ReplicationGuides.Clear();
                         InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(1));
-                        
+
                     }
                     break;
 
@@ -1107,8 +1112,8 @@ namespace Dynamo.Graph.Nodes
                     for (var i = 0; i < InPorts.Count(); ++i)
                     {
                         InPorts[i].ReplicationGuides.Clear();
-                        InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(i == dominantIndex ? 1 : guide ));
-                        
+                        InPorts[i].ReplicationGuides.Add(new ReplicationGuideData(i == dominantIndex ? 1 : guide));
+
 
                         if (i != dominantIndex)
                         {
@@ -1879,6 +1884,8 @@ namespace Dynamo.Graph.Nodes
                 portInfo.SetAttribute("default", port.UsingDefaultValue? true.ToString() : false.ToString());
                 portInfo.SetAttribute("dominant", port.IsDominantInput ? true.ToString() : false.ToString());
                 portInfo.SetAttribute("level", port.InputDataLevel.ToString(CultureInfo.InvariantCulture));
+                var repGuides = JsonConvert.SerializeObject(port.ReplicationGuides.ToList());
+                portInfo.SetAttribute("replicationGuides", repGuides);
                 element.AppendChild(portInfo);
             }
 
@@ -1927,6 +1934,8 @@ namespace Dynamo.Graph.Nodes
 
             var portInfoProcessed = new HashSet<int>();
 
+            var hasSerializedReplicationGuides = false;
+
             //read port information
             foreach (XmlNode subNode in nodeElement.ChildNodes)
             {
@@ -1955,6 +1964,13 @@ namespace Dynamo.Graph.Nodes
                 {
                     var level = int.Parse(subNode.Attributes["level"].Value);
                     currentPort.InputDataLevel = level;
+                }
+
+                if (subNode.Attributes["replicationGuides"] != null)
+                {
+                    hasSerializedReplicationGuides = true;
+                    var repData = JsonConvert.DeserializeObject<List<ReplicationGuideData>>(subNode.Attributes["replicationGuides"].Value);
+                    currentPort.ReplicationGuides = new ObservableCollection<ReplicationGuideData>(repData);
                 }
             }
 
@@ -1993,7 +2009,10 @@ namespace Dynamo.Graph.Nodes
 
             }
 
-            SetReplicationGuides();
+            if (!hasSerializedReplicationGuides)
+            {
+                SetReplicationGuides();
+            }
         }
 
         #endregion
