@@ -53,7 +53,7 @@
                 <MenuItem Name="addtoGroup"
                           Header="{x:Static p:Resources.ContextAddGroupFromSelection}"
                           Command="{Binding Path=AddToGroupCommand}" />
-                <MenuItem Header="{x:Static p:Resources.ContextMenuLacing}"
+                <!--<MenuItem Header="{x:Static p:Resources.ContextMenuLacing}"
                           Visibility="{Binding Path=ArgumentLacing, Converter={StaticResource LacingToVisibilityConverter},Mode=OneWay}">
                     <MenuItem IsCheckable="True"
                               IsChecked="{Binding Path=ArgumentLacing,Converter={StaticResource EnumToBoolConverter},ConverterParameter=Shortest,Mode=OneWay}"
@@ -70,7 +70,7 @@
                               Command="{Binding Path=SetLacingTypeCommand}"
                               CommandParameter="CrossProduct"
                               Header="{x:Static p:Resources.ContextMenuLacingCrossProduct}" />
-                </MenuItem>
+                </MenuItem>-->
                 <MenuItem Name="nodeIsFrozen"
                           Header="{x:Static p:Resources.NodesRunStatus}"
                           IsChecked="{Binding IsFrozenExplicitly,Mode=OneWay}"   
@@ -303,7 +303,7 @@
                     Height="25"
                     Visibility="{Binding ShouldShowGlyphBar, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
 
-            <TextBlock Name="lacingOptionTextBlock"
+            <!--<TextBlock Name="lacingOptionTextBlock"
                        Text="{Binding Path=ArgumentLacing, Converter={StaticResource LacingToAbbreviationConverter}}"
                        ToolTip="{Binding Path=ArgumentLacing, Converter={StaticResource LacingToTooltipConverter}}"
                        Visibility="{Binding Path=ArgumentLacing, Converter={StaticResource LacingToVisibilityConverter}}"
@@ -313,7 +313,7 @@
                        HorizontalAlignment="Right"
                        VerticalAlignment="Center"
                        Foreground="#99000000"
-                       FontWeight="Bold" />
+                       FontWeight="Bold" />-->
 
         </StackPanel>
 
