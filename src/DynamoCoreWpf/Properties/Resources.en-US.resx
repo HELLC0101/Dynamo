@@ -1981,4 +1981,7 @@ Do you want to install the latest Dynamo update?</value>
   <data name="NodeContextMenuSupportsPortLevelDataExtraction" xml:space="preserve">
     <value>Support Port Level Data Extraction</value>
   </data>
+  <data name="PreviewListLabel" xml:space="preserve">
+    <value>List</value>
+  </data>
 </root>
