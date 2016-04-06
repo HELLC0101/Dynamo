@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Dynamic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Xml;
 using Dynamo.Engine;
@@ -124,14 +127,13 @@ namespace Watch3DNodeModels
         public double WatchHeight { get; private set; }
         public bool WasExecuted { get; internal set; }
 
-        public delegate void VoidHandler();
-
         #region constructors
 
         public Watch3D()
         {
             InPortData.Add(new PortData("", Resources.Watch3DPortDataInputToolTip));
             OutPortData.Add(new PortData("", Resources.Watch3DPortDataInputToolTip));
+            OutPortData.Add(new PortData("path", "A path to a rendered image of the canvas. Use Image.WriteToFile to save the image to disk."));
 
             RegisterAllPorts();
 
@@ -162,31 +164,36 @@ namespace Watch3DNodeModels
 
         public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
         {
-            if (IsPartiallyApplied)
-            {
-                return new[]
-                {
-                    AstFactory.BuildAssignment(
-                        GetAstIdentifierForOutputIndex(0),
-                        AstFactory.BuildFunctionObject(
-                            new IdentifierListNode
-                            {
-                                LeftNode = AstFactory.BuildIdentifier("DataBridge"),
-                                RightNode = AstFactory.BuildIdentifier("BridgeData")
-                            },
-                            2,
-                            new[] { 0 },
-                            new List<AssociativeNode>
-                            {
-                                AstFactory.BuildStringNode(GUID.ToString()),
-                                AstFactory.BuildNullNode()
-                            }))
-                };
-            }
+            //if (IsPartiallyApplied)
+            //{
+            //    return new[]
+            //    {
+            //        AstFactory.BuildAssignment(
+            //            GetAstIdentifierForOutputIndex(0),
+            //            AstFactory.BuildFunctionObject(
+            //                new IdentifierListNode
+            //                {
+            //                    LeftNode = AstFactory.BuildIdentifier("DataBridge"),
+            //                    RightNode = AstFactory.BuildIdentifier("BridgeData")
+            //                },
+            //                2,
+            //                new[] { 0 },
+            //                new List<AssociativeNode>
+            //                {
+            //                    AstFactory.BuildStringNode(GUID.ToString()),
+            //                    AstFactory.BuildNullNode()
+            //                }))
+            //    };
+            //}
+
+            var tempDir = Path.GetTempPath();
+            var tempPath = Path.Combine(tempDir, GUID + ".png");
+            var pathNode = AstFactory.BuildStringNode(tempPath);
 
             var resultAst = new[]
             {
-                AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), inputAstNodes[0])
+                AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), inputAstNodes[0]),
+                AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(1), pathNode)
             };
 
             return resultAst;

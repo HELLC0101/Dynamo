@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -144,6 +145,8 @@ namespace Dynamo.Scheduler
 
         private void ProcessTaskInternal(AsyncTask asyncTask)
         {
+            Debug.WriteLine("Processing task of type: {0}", asyncTask.GetType());
+
             NotifyTaskStateChanged(asyncTask, TaskStateChangedEventArgs.State.ExecutionStarting);
 
             var executionState = asyncTask.Execute()

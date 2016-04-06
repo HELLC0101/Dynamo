@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Autodesk.DesignScript.Interfaces;
@@ -25,6 +27,7 @@ namespace Dynamo.Controls
         #region private members
 
         private Point rightMousePoint;
+        private string id = Guid.NewGuid().ToString();
 
         #endregion
 

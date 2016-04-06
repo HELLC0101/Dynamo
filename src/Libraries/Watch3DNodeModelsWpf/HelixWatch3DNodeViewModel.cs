@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Xml;
 using Autodesk.DesignScript.Interfaces;
@@ -49,17 +50,23 @@ namespace Watch3DNodeModelsWpf
         protected override void PortConnectedHandler(PortModel arg1, ConnectorModel arg2)
         {
             UpdateUpstream();
+            OnRequestViewRefresh();
         }
 
-        protected override void UpdateUpstream()
+        public void GetUpstreamAndRequestPackages()
         {
-            OnClear();
-
             var gathered = new List<NodeModel>();
             watchNode.VisibleUpstreamNodes(gathered);
 
             gathered.ForEach(n => n.WasRenderPackageUpdatedAfterExecution = false);
             gathered.ForEach(n => n.RequestVisualUpdateAsync(scheduler, engineManager.EngineController, renderPackageFactory));
+
+        }
+
+        protected override void UpdateUpstream()
+        {
+            OnClear();
+            GetUpstreamAndRequestPackages();
         }
 
         protected override void OnModelPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -75,11 +82,12 @@ namespace Watch3DNodeModelsWpf
         protected override void PortDisconnectedHandler(PortModel obj)
         {
             OnClear();
+            OnRequestViewRefresh();
         }
 
         protected override void OnNodePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-           
+            
             switch (e.PropertyName)
             {
                 case "IsUpstreamVisible":

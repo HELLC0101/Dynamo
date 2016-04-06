@@ -25,7 +25,6 @@ using Dynamo.ViewModels;
 using Dynamo.Wpf.Properties;
 using Dynamo.Wpf.Rendering;
 using DynamoUtilities;
-using HelixToolkit.Wpf;
 using HelixToolkit.Wpf.SharpDX;
 using HelixToolkit.Wpf.SharpDX.Core;
 using SharpDX;
@@ -36,6 +35,7 @@ using MeshBuilder = HelixToolkit.Wpf.SharpDX.MeshBuilder;
 using MeshGeometry3D = HelixToolkit.Wpf.SharpDX.MeshGeometry3D;
 using Model3D = HelixToolkit.Wpf.SharpDX.Model3D;
 using PerspectiveCamera = HelixToolkit.Wpf.SharpDX.PerspectiveCamera;
+using Size = System.Windows.Size;
 using TextInfo = HelixToolkit.Wpf.SharpDX.TextInfo;
 
 namespace Dynamo.Wpf.ViewModels.Watch3D
@@ -164,7 +164,20 @@ namespace Dynamo.Wpf.ViewModels.Watch3D
         }
 
         /// <summary>
-        /// An envent requesting to create geometries from render packages.
+        /// An event triggered when all render packages have been
+        /// aggregated and model geometry objects have been created.
+        /// </summary>
+        public event Action SceneUpdated;
+        private void OnSceneUpdated()
+        {
+            if (SceneUpdated != null)
+            {
+                SceneUpdated();
+            }
+        }
+
+        /// <summary>
+        /// An event requesting to create geometries from render packages.
         /// </summary>
         public event Action<IEnumerable<IRenderPackage>, bool> RequestCreateModels;
         private void OnRequestCreateModels(IEnumerable<IRenderPackage> packages, bool forceAsyncCall = false)
@@ -618,7 +631,7 @@ namespace Dynamo.Wpf.ViewModels.Watch3D
             switch (e.PropertyName)
             {
                 case "CachedValue":
-                    Debug.WriteLine(string.Format("Requesting render packages for {0}", node.GUID));
+                    //Debug.WriteLine(string.Format("Requesting render packages for {0}", node.GUID));
                     RemoveGeometryForNode(node);
                     node.RequestVisualUpdateAsync(scheduler, engineManager.EngineController, renderPackageFactory);
                     break;
@@ -648,16 +661,16 @@ namespace Dynamo.Wpf.ViewModels.Watch3D
 
         public override void GenerateViewGeometryFromRenderPackagesAndRequestUpdate(IEnumerable<IRenderPackage> taskPackages)
         {
-            foreach (var p in taskPackages)
-            {
-                Debug.WriteLine(string.Format("Processing render packages for {0}", p.Description));
-            }
+            //foreach (var p in taskPackages)
+            //{
+            //    Debug.WriteLine(string.Format("Processing render packages for {0}", p.Description));
+            //}
 
             recentlyAddedNodes.Clear();
 
-#if DEBUG
-            renderTimer.Start();
-#endif
+//#if DEBUG
+//            renderTimer.Start();
+//#endif
             var packages = taskPackages
                 .Cast<HelixRenderPackage>().Where(rp => rp.MeshVertexCount % 3 == 0);
 
@@ -665,12 +678,12 @@ namespace Dynamo.Wpf.ViewModels.Watch3D
 
             AggregateRenderPackages(packages);
 
-#if DEBUG
-            renderTimer.Stop();
-            Debug.WriteLine(string.Format("RENDER: {0} ellapsed for compiling assets for rendering.", renderTimer.Elapsed));
-            renderTimer.Reset();
-            renderTimer.Start();
-#endif
+//#if DEBUG
+//            renderTimer.Stop();
+//            Debug.WriteLine(string.Format("RENDER: {0} ellapsed for compiling assets for rendering.", renderTimer.Elapsed));
+//            renderTimer.Reset();
+//            renderTimer.Start();
+//#endif
 
             OnSceneItemsChanged();
         }
@@ -829,14 +842,14 @@ namespace Dynamo.Wpf.ViewModels.Watch3D
 
         internal void ComputeFrameUpdate()
         {
-#if DEBUG
-            if (renderTimer.IsRunning)
-            {
-                renderTimer.Stop();
-                Debug.WriteLine(string.Format("RENDER: {0} ellapsed for setting properties and rendering.", renderTimer.Elapsed));
-                renderTimer.Reset();
-            }
-#endif
+//#if DEBUG
+//            if (renderTimer.IsRunning)
+//            {
+//                renderTimer.Stop();
+//                Debug.WriteLine(string.Format("RENDER: {0} ellapsed for setting properties and rendering.", renderTimer.Elapsed));
+//                renderTimer.Reset();
+//            }
+//#endif
 
             // Raising a property change notification for
             // the SceneItems collections causes a full
@@ -859,7 +872,8 @@ namespace Dynamo.Wpf.ViewModels.Watch3D
         private void OnSceneItemsChanged()
         {
             RaisePropertyChanged("SceneItems");
-            OnRequestViewRefresh();
+            //OnRequestViewRefresh();
+            OnSceneUpdated();
         }
    
         private KeyValuePair<string, Model3D>[] FindAllGeometryModel3DsForNode(NodeModel node)

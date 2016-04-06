@@ -1,21 +1,27 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml;
 using Autodesk.DesignScript.Interfaces;
 using Dynamo.Controls;
+using Dynamo.Scheduler;
 using Dynamo.Wpf;
 using Dynamo.Wpf.Rendering;
 using Dynamo.Wpf.ViewModels.Watch3D;
+using HelixToolkit.Wpf.SharpDX;
 using VMDataBridge;
 using Watch3DNodeModels;
 using Watch3DNodeModelsWpf.Properties;
+using Path = System.IO.Path;
 
 namespace Watch3DNodeModelsWpf
 {
@@ -24,6 +30,8 @@ namespace Watch3DNodeModelsWpf
         private Watch3D watch3dModel;
         private Watch3DView watch3DView;
         private HelixWatch3DNodeViewModel watch3DViewModel;
+        private SynchronizationContext context;
+        private DynamoScheduler scheduler;
 
         public void CustomizeView(Watch3D model, NodeView nodeView)
         {
@@ -119,7 +127,25 @@ namespace Watch3DNodeModelsWpf
                     nodeView.Dispatcher.Invoke(
                         new Action<object>(RenderData),
                         DispatcherPriority.Render,
-                        obj));       
+                        obj));
+
+            scheduler = nodeView.ViewModel.DynamoViewModel.Model.Scheduler;
+            
+            context = SynchronizationContext.Current;
+
+            watch3DViewModel.SceneUpdated += Watch3DViewModel_SceneUpdated;
+        }
+
+        private void Watch3DViewModel_SceneUpdated()
+        {
+            var captureParams = new CaptureImageTaskParameters()
+            {
+                WatchNodeId = watch3dModel.GUID,
+                View = watch3DView,
+                Context = context
+            };
+            var task = new CaptureImageTask(scheduler, captureParams);
+            scheduler.ScheduleForExecution(task);
         }
 
         void model_Serialized(XmlElement nodeElement)
@@ -164,7 +190,65 @@ namespace Watch3DNodeModelsWpf
 
         public void Dispose()
         {
-
         }
     }
+
+    public class CaptureImageTaskParameters
+    {
+        public Watch3DView View { get; set; }
+        public Guid WatchNodeId { get; set; }
+        public SynchronizationContext Context { get; set; }
+    }
+
+    public class CaptureImageTask : AsyncTask
+    {
+        private CaptureImageTaskParameters parameters;
+
+        public CaptureImageTask(IScheduler scheduler, CaptureImageTaskParameters captureParams) : base(scheduler)
+        {
+            parameters = captureParams;
+        }
+
+        public override TaskPriority Priority
+        {
+            get
+            {
+                return TaskPriority.Lowest;
+            }
+        }
+
+        protected override void HandleTaskExecutionCore()
+        {
+            parameters.Context.Send((o) =>
+            {
+                var canvas = (DPFCanvas)parameters.View.View.RenderHost;
+
+                var encoder = new PngBitmapEncoder();
+                var rtBitmap = new RenderTargetBitmap((int)canvas.ActualWidth, (int)canvas.ActualHeight, 96, 96,
+                    PixelFormats.Pbgra32);
+                rtBitmap.Render(canvas);
+
+                encoder.Frames.Add(BitmapFrame.Create(rtBitmap));
+
+                var tempDir = Path.GetTempPath();
+                var tempPath = Path.Combine(tempDir, parameters.WatchNodeId + ".png");
+
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+
+                using (var stream = File.Create(tempPath))
+                {
+                    encoder.Save(stream);
+                }
+
+            }, null);
+        }
+
+        protected override void HandleTaskCompletionCore()
+        {
+        }
+    }
+
 }

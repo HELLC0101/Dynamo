@@ -653,7 +653,7 @@ namespace Dynamo.Models
 
         private void EngineController_TraceReconcliationComplete(TraceReconciliationEventArgs obj)
         {
-            Debug.WriteLine("TRACE RECONCILIATION: {0} total serializables were orphaned.", obj.CallsiteToOrphanMap.SelectMany(kvp=>kvp.Value).Count());
+            //Debug.WriteLine("TRACE RECONCILIATION: {0} total serializables were orphaned.", obj.CallsiteToOrphanMap.SelectMany(kvp=>kvp.Value).Count());
             
             // The orphans will come back here as a dictionary of lists of ISerializables jeyed by their callsite id.
             // This dictionary gets redistributed into a dictionary keyed by the workspace id.
