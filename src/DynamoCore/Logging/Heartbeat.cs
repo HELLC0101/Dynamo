@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using Dynamo.Graph;
 using Dynamo.Graph.Nodes;
 using Dynamo.Models;
 
@@ -15,14 +14,46 @@ namespace Dynamo.Logging
     /// </summary>
     internal class Heartbeat
     {
+        #region private members
+
         private static Heartbeat instance;
         private const int WARMUP_DELAY_MS = 5000;
         private const int HEARTBEAT_INTERVAL_MS = 60 * 1000;
         private readonly DateTime startTime;
         private Thread heartbeatThread;
         private readonly DynamoModel dynamoModel;
-
         private readonly AutoResetEvent shutdownEvent = new AutoResetEvent(false);
+
+        #endregion
+
+        #region public methods
+
+        public static Heartbeat GetInstance(DynamoModel dynModel)
+        {
+            lock (typeof(Heartbeat))
+            {
+                if (instance == null)
+                    instance = new Heartbeat(dynModel);
+            }
+
+            return instance;
+        }
+
+        public static void DestroyInstance()
+        {
+            lock (typeof(Heartbeat))
+            {
+                if (instance != null)
+                {
+                    instance.DestroyInternal();
+                    instance = null;
+                }
+            }
+        }
+
+        #endregion
+
+        #region private methods
 
         private Heartbeat(DynamoModel dynamoModel)
         {
@@ -63,29 +94,6 @@ namespace Dynamo.Logging
             heartbeatThread = null;
         }
 
-        public static Heartbeat GetInstance(DynamoModel dynModel)
-        {
-            lock (typeof(Heartbeat))
-            {
-                if (instance == null)
-                    instance = new Heartbeat(dynModel);
-            }
-
-            return instance;
-        }
-
-        public static void DestroyInstance()
-        {
-            lock (typeof(Heartbeat))
-            {
-                if (instance != null)
-                {
-                    instance.DestroyInternal();
-                    instance = null;
-                }
-            }
-        }
-
         private void ExecThread()
         {
             Thread.Sleep(WARMUP_DELAY_MS);
@@ -99,21 +107,23 @@ namespace Dynamo.Logging
                     //Disable heartbeat to avoid 150 event/session limit
                     //InstrumentationLogger.LogAnonymousEvent("Heartbeat", "ApplicationLifeCycle", GetVersionString());
 
-                    String usage = PackFrequencyDict(ComputeNodeFrequencies());
-                    String errors = PackFrequencyDict(ComputeErrorFrequencies());
+                    var usage = PackFrequencyDict(ComputeNodeFrequencies());
+                    var errors = PackFrequencyDict(ComputeErrorFrequencies());
 
                     InstrumentationLogger.LogPiiInfo("Node-usage", usage);
                     InstrumentationLogger.LogPiiInfo("Nodes-with-errors", errors);
 
-                    DynamoModel.OnRequestDispatcherInvoke(
+                    if (dynamoModel.CurrentWorkspace != null)
+                    {
+                        DynamoModel.OnRequestDispatcherInvoke(
                         () =>
                         {
-                            string workspace =
+                            var workspace =
                                 dynamoModel.CurrentWorkspace
                                     .GetStringRepOfWorkspace();
                             InstrumentationLogger.LogPiiInfo("Workspace", workspace);
                         });
-
+                    }
                 }
                 catch (Exception e)
                 {
@@ -145,8 +155,6 @@ namespace Dynamo.Logging
             }
         }
 
-
-
         /// <summary>
         /// Turn a frequency dictionary into a string that can be sent
         /// </summary>
@@ -168,7 +176,6 @@ namespace Dynamo.Logging
             String ret = sb.ToString();
             return ret;
         }
-
 
         private Dictionary<String, int> ComputeNodeFrequencies()
         {
@@ -215,6 +222,7 @@ namespace Dynamo.Logging
             return ret;
         }
 
+        #endregion
     }
 
 }
