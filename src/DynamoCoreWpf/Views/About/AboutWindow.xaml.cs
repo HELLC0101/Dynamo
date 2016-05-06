@@ -48,7 +48,7 @@ namespace Dynamo.UI.Views
     }
 
     //http://www.rhyous.com/2011/08/01/loading-a-richtextbox-from-an-rtf-file-using-binding-or-a-richtextfile-control/
-    internal class RichTextFile : RichTextBox
+    public class RichTextFile : RichTextBox
     {
         public RichTextFile()
         {

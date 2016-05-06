@@ -1,10 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-
+using Dynamo.Core;
 using Dynamo.PackageManager;
 
 using Microsoft.Practices.Prism.ViewModel;
+using NotificationObject = Dynamo.Core.NotificationObject;
 
 namespace Dynamo.ViewModels
 {
