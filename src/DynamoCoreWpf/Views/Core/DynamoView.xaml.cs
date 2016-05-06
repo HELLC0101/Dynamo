@@ -14,8 +14,6 @@ using Dynamo.Core;
 using Dynamo.Models;
 using Dynamo.Nodes;
 using Dynamo.Nodes.Prompts;
-using Dynamo.PackageManager;
-using Dynamo.PackageManager.UI;
 using Dynamo.Search;
 using Dynamo.Selection;
 using Dynamo.Utilities;
@@ -42,7 +40,6 @@ using ResourceNames = Dynamo.Wpf.Interfaces.ResourceNames;
 using Dynamo.Wpf.ViewModels.Core;
 using Dynamo.Wpf.Views.Gallery;
 using Dynamo.Wpf.Extensions;
-using Dynamo.Wpf.Views.PackageManager;
 using Dynamo.Views;
 using System.Collections.Generic;
 
@@ -333,7 +330,7 @@ namespace Dynamo.Controls
         {
             if ( dynamoViewModel.ShowLogin && dynamoViewModel.Model.AuthenticationManager.HasAuthProvider)
             {
-                var login = new Login(dynamoViewModel.PackageManagerClientViewModel);
+                var login = new Login(dynamoViewModel.AuthenticationManagerViewModel);
                 loginGrid.Children.Add(login);
             }
         }
@@ -513,15 +510,6 @@ namespace Dynamo.Controls
 
             #endregion
 
-            #region Package manager
-
-            dynamoViewModel.RequestPackagePublishDialog += DynamoViewModelRequestRequestPackageManagerPublish;
-            dynamoViewModel.RequestManagePackagesDialog += DynamoViewModelRequestShowInstalledPackages;
-            dynamoViewModel.RequestPackageManagerSearchDialog += DynamoViewModelRequestShowPackageManagerSearch;
-            dynamoViewModel.RequestPackagePathsDialog += DynamoViewModelRequestPackagePaths;
-
-            #endregion
-
             #region Node view injection
 
             // scan for node view overrides
@@ -590,28 +578,6 @@ namespace Dynamo.Controls
             BackgroundPreview.SetBinding(VisibilityProperty, vizBinding);
         }
 
-        /// <summary>
-        /// Call this method to optionally bring up terms of use dialog. User 
-        /// needs to accept terms of use before any packages can be downloaded 
-        /// from package manager.
-        /// </summary>
-        /// <returns>Returns true if the terms of use for downloading a package 
-        /// is accepted by the user, or false otherwise. If this method returns 
-        /// false, then download of package should be terminated.</returns>
-        /// 
-        bool DisplayTermsOfUseForAcceptance()
-        {
-            var prefSettings = dynamoViewModel.Model.PreferenceSettings;
-            if (prefSettings.PackageDownloadTouAccepted)
-                return true; // User accepts the terms of use.
-
-            var acceptedTermsOfUse = TermsOfUseHelper.ShowTermsOfUseDialog(false, null);
-            prefSettings.PackageDownloadTouAccepted = acceptedTermsOfUse;
-
-            // User may or may not accept the terms.
-            return prefSettings.PackageDownloadTouAccepted;
-        }
-
         void DynamoView_Unloaded(object sender, RoutedEventArgs e)
         {
             UnsubscribeNodeViewCustomizationEvents();
@@ -660,83 +626,6 @@ namespace Dynamo.Controls
                     galleryBackground.Visibility = Visibility.Hidden;
                 }
             }
-        }
-
-        private PublishPackageView _pubPkgView;
-        void DynamoViewModelRequestRequestPackageManagerPublish(PublishPackageViewModel model)
-        {
-            if (_pubPkgView == null)
-            {
-                _pubPkgView = new PublishPackageView(model)
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-                _pubPkgView.Closed += (sender, args) => _pubPkgView = null;
-                _pubPkgView.Show();
-
-                if (_pubPkgView.IsLoaded && IsLoaded) _pubPkgView.Owner = this;
-            }
-
-            _pubPkgView.Focus();
-        }
-
-        private PackageManagerSearchView _searchPkgsView;
-        private PackageManagerSearchViewModel _pkgSearchVM;
-        void DynamoViewModelRequestShowPackageManagerSearch(object s, EventArgs e)
-        {
-            if (!DisplayTermsOfUseForAcceptance())
-                return; // Terms of use not accepted.
-
-            if (_pkgSearchVM == null)
-            {
-                _pkgSearchVM = new PackageManagerSearchViewModel(dynamoViewModel.PackageManagerClientViewModel);
-            }
-
-            if (_searchPkgsView == null)
-            {
-                _searchPkgsView = new PackageManagerSearchView(_pkgSearchVM)
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-
-                _searchPkgsView.Closed += (sender, args) => _searchPkgsView = null;
-                _searchPkgsView.Show();
-
-                if (_searchPkgsView.IsLoaded && IsLoaded) _searchPkgsView.Owner = this;
-            }
-
-            _searchPkgsView.Focus();
-            _pkgSearchVM.RefreshAndSearchAsync();
-        }
-
-        private void DynamoViewModelRequestPackagePaths(object sender, EventArgs e)
-        {
-            var viewModel = new PackagePathViewModel(dynamoViewModel.PreferenceSettings);
-            var view = new PackagePathView(viewModel) { Owner = this };
-            view.ShowDialog();
-        }
-
-        private InstalledPackagesView _installedPkgsView;
-        void DynamoViewModelRequestShowInstalledPackages(object s, EventArgs e)
-        {
-            if (_installedPkgsView == null)
-            {
-                var pmExtension = dynamoViewModel.Model.GetPackageManagerExtension();
-                _installedPkgsView = new InstalledPackagesView(new InstalledPackagesViewModel(dynamoViewModel,
-                    pmExtension.PackageLoader))
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-
-                _installedPkgsView.Closed += (sender, args) => _installedPkgsView = null;
-                _installedPkgsView.Show();
-
-                if (_installedPkgsView.IsLoaded && IsLoaded) _installedPkgsView.Owner = this;
-            }
-            _installedPkgsView.Focus();
         }
 
         void ClipBoard_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -1077,12 +966,6 @@ namespace Dynamo.Controls
 
             dynamoViewModel.Model.RequestLayoutUpdate -= vm_RequestLayoutUpdate;
             dynamoViewModel.RequestViewOperation -= DynamoViewModelRequestViewOperation;
-
-            //PACKAGE MANAGER
-            dynamoViewModel.RequestPackagePublishDialog -= DynamoViewModelRequestRequestPackageManagerPublish;
-            dynamoViewModel.RequestManagePackagesDialog -= DynamoViewModelRequestShowInstalledPackages;
-            dynamoViewModel.RequestPackageManagerSearchDialog -= DynamoViewModelRequestShowPackageManagerSearch;
-            dynamoViewModel.RequestPackagePathsDialog -= DynamoViewModelRequestPackagePaths;
 
             //FUNCTION NAME PROMPT
             dynamoViewModel.Model.RequestsFunctionNamePrompt -= DynamoViewModelRequestsFunctionNamePrompt;

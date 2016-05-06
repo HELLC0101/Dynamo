@@ -279,6 +279,7 @@
       <DependentUpon>UsageReportingAgreementPrompt.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\SharedResourceDictionary.cs" />
+    <Compile Include="ViewModels\AuthenticationManagerViewModel.cs" />
     <Compile Include="ViewModels\Core\AnnotationExtension.cs" />
     <Compile Include="ViewModels\Core\AnnotationViewModel.cs" />
     <Compile Include="Utilities\ResourceUtilities.cs" />

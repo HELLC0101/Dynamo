@@ -12,9 +12,9 @@ namespace Dynamo.Wpf.Controls
     /// </summary>
     public partial class Login : UserControl
     {
-        private readonly PackageManagerClientViewModel _viewModel;
+        private readonly AuthenticationManagerViewModel _viewModel;
 
-        public Login(PackageManagerClientViewModel viewModel)
+        public Login(AuthenticationManagerViewModel viewModel)
         {
             this.DataContext = viewModel;
             this._viewModel = viewModel;
@@ -24,15 +24,16 @@ namespace Dynamo.Wpf.Controls
 
         private void LoginButton_OnClick(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.AuthenticationManager.LoginState == LoginState.LoggedIn)
+            switch (_viewModel.LoginState)
             {
-                var button = (Button) sender;
-                button.ContextMenu.DataContext = button.DataContext;
-                button.ContextMenu.IsOpen = true;
-            }
-            else if (_viewModel.AuthenticationManager.LoginState == LoginState.LoggedOut)
-            {
-                _viewModel.ToggleLoginStateCommand.Execute(null);
+                case LoginState.LoggedIn:
+                    var button = (Button) sender;
+                    button.ContextMenu.DataContext = button.DataContext;
+                    button.ContextMenu.IsOpen = true;
+                    break;
+                case LoginState.LoggedOut:
+                    _viewModel.ToggleLoginStateCommand.Execute(null);
+                    break;
             }
         }
     }

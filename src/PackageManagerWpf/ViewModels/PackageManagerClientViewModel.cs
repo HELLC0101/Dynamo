@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,6 +22,8 @@ using System.IO;
 using System.Threading;
 using Dynamo.Graph.Nodes.CustomNodes;
 using Dynamo.Graph.Workspaces;
+using Dynamo.Wpf.Views.PackageManager;
+using PackageManagerWpf;
 
 namespace Dynamo.ViewModels
 {
@@ -161,7 +164,8 @@ namespace Dynamo.ViewModels
     /// </summary>
     public class PackageManagerClientViewModel : NotificationObject
     {
-
+        private AuthenticationManager authenticationManager;
+        
         #region Properties/Fields
 
         ObservableCollection<PackageUploadHandle> _uploads = new ObservableCollection<PackageUploadHandle>();
@@ -181,61 +185,158 @@ namespace Dynamo.ViewModels
         public List<PackageManagerSearchElement> CachedPackageList { get; private set; }
 
         public readonly DynamoViewModel DynamoViewModel;
-        public AuthenticationManager AuthenticationManager { get; set; }
+
         internal PackageManagerClient Model { get; private set; }
 
-        public LoginState LoginState
-        {
-            get
-            {
-                return AuthenticationManager.LoginState;
-            }
-        }
-
-        public string Username
-        {
-            get
-            {
-                return AuthenticationManager.Username;
-            }
-        }
+        public DelegateCommand PublishNewPackageCommand { get; set; }
+        public DelegateCommand PublishCurrentWorkspaceCommand { get; set; }
+        public DelegateCommand PublishSelectedNodesCommand { get; set; }
+        public DelegateCommand<Function> PublishCustomNodeCommand { get; set; }
 
         #endregion
 
-        public ICommand ToggleLoginStateCommand { get; private set; }
+
+        public event PackageManagerViewExtension.RequestPackagePublishDialogHandler RequestPackagePublishDialog;
+        public void OnRequestPackagePublishDialog(PublishPackageViewModel vm)
+        {
+            if (RequestPackagePublishDialog != null)
+                RequestPackagePublishDialog(vm);
+        }
 
         internal PackageManagerClientViewModel(DynamoViewModel dynamoViewModel, PackageManagerClient model )
         {
             this.DynamoViewModel = dynamoViewModel;
-            this.AuthenticationManager = dynamoViewModel.Model.AuthenticationManager;
+            this.authenticationManager = dynamoViewModel.Model.AuthenticationManager;
             Model = model;
             CachedPackageList = new List<PackageManagerSearchElement>();
 
-            this.ToggleLoginStateCommand = new DelegateCommand(ToggleLoginState, CanToggleLoginState);
+            PublishNewPackageCommand = new DelegateCommand(PublishNewPackage, CanPublishNewPackage);
+            PublishCurrentWorkspaceCommand = new DelegateCommand(PublishCurrentWorkspace, CanPublishCurrentWorkspace);
+            PublishSelectedNodesCommand = new DelegateCommand(PublishSelectedNodes, CanPublishSelectedNodes);
+            PublishCustomNodeCommand = new DelegateCommand<Function>(PublishCustomNode, CanPublishCustomNode);
 
-            AuthenticationManager.LoginStateChanged += (loginState) =>
-            {
-                RaisePropertyChanged("LoginState");
-                RaisePropertyChanged("Username");
-            };
+            dynamoViewModel.RequestPackagePublishDialog += DynamoViewModelRequestRequestPackageManagerPublish;
+            dynamoViewModel.RequestManagePackagesDialog += DynamoViewModelRequestShowInstalledPackages;
+            dynamoViewModel.RequestPackageManagerSearchDialog += DynamoViewModelRequestShowPackageManagerSearch;
+            dynamoViewModel.RequestPackagePathsDialog += DynamoViewModelRequestPackagePaths;
 
+            dynamoViewModel.PropertyChanged += DynamoViewModel_PropertyChanged;
+            DynamoSelection.Instance.Selection.CollectionChanged += SelectionOnCollectionChanged;
         }
 
-        private void ToggleLoginState()
+        private void DynamoViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (AuthenticationManager.LoginState == LoginState.LoggedIn)
+            switch (e.PropertyName)
             {
-                AuthenticationManager.Logout();
-            }
-            else
-            {
-                AuthenticationManager.Login();
+                case "CurrentWorkspace":
+                    if (this.PublishCurrentWorkspaceCommand != null)
+                        this.PublishCurrentWorkspaceCommand.RaiseCanExecuteChanged();
+                    break;
             }
         }
 
-        private bool CanToggleLoginState()
+        private void SelectionOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            return AuthenticationManager.LoginState == LoginState.LoggedOut || AuthenticationManager.LoginState == LoginState.LoggedIn;
+            PublishSelectedNodesCommand.RaiseCanExecuteChanged();
+        }
+
+        private PublishPackageView _pubPkgView;
+        void DynamoViewModelRequestRequestPackageManagerPublish(PublishPackageViewModel model)
+        {
+            if (_pubPkgView == null)
+            {
+                _pubPkgView = new PublishPackageView(model)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                _pubPkgView.Closed += (sender, args) => _pubPkgView = null;
+                _pubPkgView.Show();
+
+                if (_pubPkgView.IsLoaded && IsLoaded) _pubPkgView.Owner = this;
+            }
+
+            _pubPkgView.Focus();
+        }
+
+        private PackageManagerSearchView _searchPkgsView;
+        private PackageManagerSearchViewModel _pkgSearchVM;
+        void DynamoViewModelRequestShowPackageManagerSearch(object s, EventArgs e)
+        {
+            if (!DisplayTermsOfUseForAcceptance())
+                return; // Terms of use not accepted.
+
+            if (_pkgSearchVM == null)
+            {
+                _pkgSearchVM = new PackageManagerSearchViewModel(dynamoViewModel.PackageManagerClientViewModel);
+            }
+
+            if (_searchPkgsView == null)
+            {
+                _searchPkgsView = new PackageManagerSearchView(_pkgSearchVM)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                _searchPkgsView.Closed += (sender, args) => _searchPkgsView = null;
+                _searchPkgsView.Show();
+
+                if (_searchPkgsView.IsLoaded && IsLoaded) _searchPkgsView.Owner = this;
+            }
+
+            _searchPkgsView.Focus();
+            _pkgSearchVM.RefreshAndSearchAsync();
+        }
+
+        /// <summary>
+        /// Call this method to optionally bring up terms of use dialog. User 
+        /// needs to accept terms of use before any packages can be downloaded 
+        /// from package manager.
+        /// </summary>
+        /// <returns>Returns true if the terms of use for downloading a package 
+        /// is accepted by the user, or false otherwise. If this method returns 
+        /// false, then download of package should be terminated.</returns>
+        /// 
+        bool DisplayTermsOfUseForAcceptance()
+        {
+            var prefSettings = DynamoViewModel.Model.PreferenceSettings;
+            if (prefSettings.PackageDownloadTouAccepted)
+                return true; // User accepts the terms of use.
+
+            var acceptedTermsOfUse = TermsOfUseHelper.ShowTermsOfUseDialog(false, null);
+            prefSettings.PackageDownloadTouAccepted = acceptedTermsOfUse;
+
+            // User may or may not accept the terms.
+            return prefSettings.PackageDownloadTouAccepted;
+        }
+
+        private void DynamoViewModelRequestPackagePaths(object sender, EventArgs e)
+        {
+            var viewModel = new PackagePathViewModel(DynamoViewModel.PreferenceSettings);
+            var view = new PackagePathView(viewModel) { Owner = this };
+            view.ShowDialog();
+        }
+
+        private InstalledPackagesView _installedPkgsView;
+        void DynamoViewModelRequestShowInstalledPackages(object s, EventArgs e)
+        {
+            if (_installedPkgsView == null)
+            {
+                var pmExtension = DynamoViewModel.Model.GetPackageManagerExtension();
+                _installedPkgsView = new InstalledPackagesView(new InstalledPackagesViewModel(DynamoViewModel,
+                    pmExtension.PackageLoader))
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                _installedPkgsView.Closed += (sender, args) => _installedPkgsView = null;
+                _installedPkgsView.Show();
+
+                if (_installedPkgsView.IsLoaded && IsLoaded) _installedPkgsView.Owner = this;
+            }
+            _installedPkgsView.Focus();
         }
 
         public void PublishCurrentWorkspace(object m)
@@ -277,7 +378,7 @@ namespace Dynamo.ViewModels
 
         public bool CanPublishCurrentWorkspace(object m)
         {
-            return DynamoViewModel.Model.CurrentWorkspace is CustomNodeWorkspaceModel && AuthenticationManager.HasAuthProvider;
+            return DynamoViewModel.Model.CurrentWorkspace is CustomNodeWorkspaceModel && authenticationManager.HasAuthProvider;
         }
 
         public void PublishNewPackage(object m)
@@ -285,7 +386,7 @@ namespace Dynamo.ViewModels
             var termsOfUseCheck = new TermsOfUseHelper(new TermsOfUseHelperParams
             {
                 PackageManagerClient = Model,
-                AuthenticationManager = AuthenticationManager,
+                AuthenticationManager = authenticationManager,
                 ResourceProvider = DynamoViewModel.BrandingResourceProvider,
                 AcceptanceCallback = ShowNodePublishInfo
             });
@@ -295,7 +396,7 @@ namespace Dynamo.ViewModels
 
         public bool CanPublishNewPackage(object m)
         {
-            return AuthenticationManager.HasAuthProvider;
+            return authenticationManager.HasAuthProvider;
         }
 
         public void PublishCustomNode(Function m)
@@ -308,7 +409,7 @@ namespace Dynamo.ViewModels
                 var termsOfUseCheck = new TermsOfUseHelper(new TermsOfUseHelperParams
                 {
                     PackageManagerClient = Model,
-                    AuthenticationManager = AuthenticationManager,
+                    AuthenticationManager = authenticationManager,
                     ResourceProvider = DynamoViewModel.BrandingResourceProvider,
                     AcceptanceCallback = () => ShowNodePublishInfo(new[]
                     {
@@ -322,7 +423,7 @@ namespace Dynamo.ViewModels
 
         public bool CanPublishCustomNode(Function m)
         {
-            return AuthenticationManager.HasAuthProvider && m != null;
+            return authenticationManager.HasAuthProvider && m != null;
         }
 
         public void PublishSelectedNodes(object m)
@@ -364,7 +465,7 @@ namespace Dynamo.ViewModels
             var termsOfUseCheck = new TermsOfUseHelper(new TermsOfUseHelperParams
             {
                 PackageManagerClient = Model,
-                AuthenticationManager = AuthenticationManager,
+                AuthenticationManager = authenticationManager,
                 ResourceProvider = DynamoViewModel.BrandingResourceProvider,
                 AcceptanceCallback = () => ShowNodePublishInfo(defs)
             });

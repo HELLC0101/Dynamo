@@ -372,7 +372,7 @@ namespace Dynamo.ViewModels
 
         public SearchViewModel SearchViewModel { get; private set; }
 
-        public PackageManagerClientViewModel PackageManagerClientViewModel { get; private set; }
+        public AuthenticationManagerViewModel AuthenticationManagerViewModel { get; private set; }
 
         /// <summary>
         ///     Whether sign in should be shown in Dynamo.  In instances where Dynamo obtains
@@ -470,7 +470,7 @@ namespace Dynamo.ViewModels
             UsageReportingManager.Instance.InitializeCore(this);
             this.WatchHandler = startConfiguration.WatchHandler;
             var pmExtension = model.GetPackageManagerExtension();
-            this.PackageManagerClientViewModel = new PackageManagerClientViewModel(this, pmExtension.PackageManagerClient);
+            this.AuthenticationManagerViewModel = new AuthenticationManagerViewModel(this.model.AuthenticationManager);
             this.SearchViewModel = new SearchViewModel(this);
 
             // Start page should not show up during test mode.
@@ -800,7 +800,6 @@ namespace Dynamo.ViewModels
 
         private void SelectionOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            PublishSelectedNodesCommand.RaiseCanExecuteChanged();
             AlignSelectedCommand.RaiseCanExecuteChanged();
             DeleteCommand.RaiseCanExecuteChanged();
             UngroupModelCommand.RaiseCanExecuteChanged();
@@ -831,8 +830,6 @@ namespace Dynamo.ViewModels
                     RaisePropertyChanged("BackgroundColor");
                     RaisePropertyChanged("CurrentWorkspaceIndex");
                     RaisePropertyChanged("ViewingHomespace");
-                    if (this.PublishCurrentWorkspaceCommand != null)
-                        this.PublishCurrentWorkspaceCommand.RaiseCanExecuteChanged();
                     RaisePropertyChanged("IsPanning");
                     RaisePropertyChanged("IsOrbiting");
                     //RaisePropertyChanged("RunEnabled");
