@@ -6,11 +6,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using Dynamo.Core;
 using Dynamo.Models;
 using Dynamo.PackageManager;
-using Dynamo.Selection;
 using Dynamo.Wpf.Interfaces;
 using Greg.AuthProviders;
 
@@ -194,7 +192,6 @@ namespace Dynamo.ViewModels
         public DelegateCommand<Function> PublishCustomNodeCommand { get; set; }
 
         #endregion
-
 
         public event PackageManagerViewExtension.RequestPackagePublishDialogHandler RequestPackagePublishDialog;
         public void OnRequestPackagePublishDialog(PublishPackageViewModel vm)
