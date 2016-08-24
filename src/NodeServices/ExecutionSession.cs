@@ -14,22 +14,22 @@ namespace Dynamo.Session
         string CurrentWorkspacePath { get; }
 
         /// <summary>
-        /// Gets session parameter value for the given parameter name.
+        /// Returns session parameter value for the given parameter name.
         /// </summary>
         /// <param name="parameter">Name of session parameter</param>
         /// <returns>Session parameter value as object</returns>
         object GetParameterValue(string parameter);
 
         /// <summary>
-        /// Gets list of session parameter keys available in the session.
+        /// Returns list of session parameter keys available in the session.
         /// </summary>
         /// <returns></returns>
         IEnumerable<string> GetParameterKeys();
 
         /// <summary>
         /// A helper method to resolve the given file path. The given file path
-        /// will be resolved by searching into the current workspace, packages and
-        /// definitions folder, core and host application installation folders etc.
+        /// will be resolved by searching into the current workspace, core and 
+        /// host application installation folders etc.
         /// </summary>
         /// <param name="filepath">Input file path</param>
         /// <returns>True if the file is found</returns>

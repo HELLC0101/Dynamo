@@ -20,6 +20,7 @@ using Operator = ProtoCore.DSASM.Operator;
 using ProtoCore;
 using ProtoCore.Namespace;
 using Dynamo.Exceptions;
+using Dynamo.Configuration;
 
 namespace Dynamo.Engine
 {
@@ -42,7 +43,12 @@ namespace Dynamo.Engine
         private readonly List<string> packagedLibraries = new List<string>();
 
         private readonly IPathManager pathManager;
-        public ProtoCore.Core LibraryManagementCore{get; private set;}
+        private readonly IPreferences preferenceSettings;
+
+        /// <summary>
+        /// Returns core which is used for parsing code and loading libraries
+        /// </summary>
+        public ProtoCore.Core LibraryManagementCore { get; private set; }
         private ProtoCore.Core liveRunnerCore = null;
 
         internal void SetLiveCore(ProtoCore.Core core)
@@ -83,10 +89,25 @@ namespace Dynamo.Engine
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LibraryServices"/> class.
+        /// </summary>
+        /// <param name="libraryManagementCore">Core which is used for parsing code and loading libraries</param>
+        /// <param name="pathManager">Instance of IPathManager containing neccessary Dynamo paths</param>
         public LibraryServices(ProtoCore.Core libraryManagementCore, IPathManager pathManager)
+            : this(libraryManagementCore, pathManager, null) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LibraryServices"/> class.
+        /// </summary>
+        /// <param name="libraryManagementCore">Core which is used for parsing code and loading libraries</param>
+        /// <param name="pathManager">Instance of IPathManager containing neccessary Dynamo paths</param>
+        /// <param name="preferences">The preference settings of the Dynamo instance</param>
+        public LibraryServices(ProtoCore.Core libraryManagementCore, IPathManager pathManager, IPreferences preferences)
         {
             LibraryManagementCore = libraryManagementCore;
             this.pathManager = pathManager;
+            preferenceSettings = preferences;
 
             PreloadLibraries(pathManager.PreloadedLibraries);
             PopulateBuiltIns();
@@ -95,6 +116,9 @@ namespace Dynamo.Engine
             LibraryLoadFailed += new EventHandler<LibraryLoadFailedEventArgs>(LibraryLoadFailureHandler);
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources
+        /// </summary>
         public void Dispose()
         {
             builtinFunctionGroups.Clear();
@@ -103,7 +127,7 @@ namespace Dynamo.Engine
         }
         
         /// <summary>
-        ///     Get a list of imported libraries.
+        ///     Returns a list of imported libraries.
         /// </summary>
         public IEnumerable<string> ImportedLibraries
         {
@@ -111,7 +135,7 @@ namespace Dynamo.Engine
         }
 
         /// <summary>
-        ///     Get builtin function groups.
+        ///     Returns built-in function groups.
         /// </summary>
         /// <returns></returns>
         public IEnumerable<FunctionGroup> BuiltinFunctionGroups
@@ -120,15 +144,26 @@ namespace Dynamo.Engine
         }
 
         /// <summary>
-        ///     Get all imported function groups.
+        ///     Returns all imported function groups.
         /// </summary>
         public IEnumerable<FunctionGroup> ImportedFunctionGroups
         {
             get { return importedFunctionGroups.SelectMany(d => d.Value).Select(p => p.Value); }
         }
 
+        /// <summary>
+        /// Occurs before a library is loaded
+        /// </summary>
         public event EventHandler<LibraryLoadingEventArgs> LibraryLoading;
+        
+        /// <summary>
+        /// Occurs if a library cannot be loaded
+        /// </summary>
         public event EventHandler<LibraryLoadFailedEventArgs> LibraryLoadFailed;
+        
+        /// <summary>
+        /// Occurs after a library is successfully loaded
+        /// </summary>
         public event EventHandler<LibraryLoadedEventArgs> LibraryLoaded;
 
         private void LibraryLoadFailureHandler(object sender, LibraryLoadFailedEventArgs args)
@@ -294,7 +329,7 @@ namespace Dynamo.Engine
         }
 
         /// <summary>
-        ///     Get function groups from an imported library.
+        ///     Returns function groups from an imported library.
         /// </summary>
         /// <param name="library">Library path</param>
         /// <returns></returns>
@@ -304,17 +339,31 @@ namespace Dynamo.Engine
                 throw new ArgumentNullException();
 
             Dictionary<string, FunctionGroup> functionGroups;
-            if (importedFunctionGroups.TryGetValue(library, out functionGroups))
-                return functionGroups.Values;
+            if (!importedFunctionGroups.TryGetValue(library, out functionGroups))
+            {
+                // Return an empty list instead of 'null' as some of the caller may
+                // not have the opportunity to check against 'null' enumerator (for
+                // example, an inner iterator in a nested LINQ statement).
+                return new List<FunctionGroup>();
+            }
 
-            // Return an empty list instead of 'null' as some of the caller may
-            // not have the opportunity to check against 'null' enumerator (for
-            // example, an inner iterator in a nested LINQ statement).
-            return new List<FunctionGroup>();
+            IEnumerable<FunctionGroup> result = functionGroups.Values;
+
+            // Skip namespaces specified in the preference settings
+            var settings = preferenceSettings as PreferenceSettings;
+            if (settings != null)
+            {
+                foreach (var nsp in settings.NamespacesToExcludeFromLibrary
+                    .Where(x => x.StartsWith(library + ':')).Select(x => x.Split(':').LastOrDefault()))
+                {
+                    result = result.Where(funcGroup => !funcGroup.QualifiedName.StartsWith(nsp));
+                }
+            }
+            return result;
         }
 
         /// <summary>
-        /// Return all function groups.
+        /// Returns all function groups.
         /// </summary>
         internal IEnumerable<FunctionGroup> GetAllFunctionGroups()
         {
@@ -322,7 +371,7 @@ namespace Dynamo.Engine
         }
 
         /// <summary>
-        ///     Get function descriptor from the managled function name.
+        ///     Returns function descriptor from the managled function name.
         ///     name.
         /// </summary>
         /// <param name="library">Library path</param>
@@ -346,7 +395,7 @@ namespace Dynamo.Engine
         }
 
         /// <summary>
-        ///     Get function descriptor from the managed function name.
+        ///     Returns function descriptor from the managed function name.
         /// </summary>
         /// <param name="managledName"></param>
         /// <returns></returns>
@@ -377,6 +426,25 @@ namespace Dynamo.Engine
         internal bool IsLibraryLoaded(string library)
         {
             return importedFunctionGroups.ContainsKey(library);
+        }
+
+        /// <summary>
+        /// Checks if a given function is in the builtinFunctionGroups so we do not necessarily look for it's library based on its Assembly tag
+        /// </summary>
+        /// <param name="library">assembly name</param>
+        /// <param name="nickname">nick name, used for searching as key with default value ""</param>
+        /// <returns></returns>
+        internal bool IsFunctionBuiltIn(string library, string nickname = "")
+        {
+            // For Nodes with not .dll specific Assembly tag
+            if (library == Categories.BuiltIn || library == Categories.Operators)
+            {
+                return builtinFunctionGroups.ContainsKey(nickname);
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private static bool CanbeResolvedTo(ICollection<string> partialName, ICollection<string> fullName)
@@ -687,11 +755,11 @@ namespace Dynamo.Engine
                                                                 IsVisibleInLibrary = visibleInLibrary,
                                                                 IsBuiltIn = true,
                                                                 IsPackageMember = false,
-                                                                Assembly = "BuiltIn"
+                                                                Assembly = Categories.BuiltIn
                                                             });
 
             AddBuiltinFunctions(functions);
-            LoadLibraryMigrations("BuiltIn");
+            LoadLibraryMigrations(Categories.BuiltIn);
         }
 
         private static IEnumerable<TypedParameter> GetBinaryFuncArgs()
@@ -730,7 +798,7 @@ namespace Dynamo.Engine
                     FunctionType = FunctionType.GenericFunction,
                     IsBuiltIn = true,
                     IsPackageMember = false,
-                    Assembly = "Operators"
+                    Assembly = Categories.Operators
                 }))
                 .Concat(new FunctionDescriptor(new FunctionDescriptorParams
                 {
@@ -740,7 +808,7 @@ namespace Dynamo.Engine
                     FunctionType = FunctionType.GenericFunction,
                     IsBuiltIn = true,
                     IsPackageMember = false,
-                    Assembly = "Operators"
+                    Assembly = Categories.Operators
                 }).AsSingleton());
 
             AddBuiltinFunctions(functions);
@@ -962,7 +1030,7 @@ namespace Dynamo.Engine
 
         public static class Categories
         {
-            public const string BuiltIns = "Builtin Functions";
+            public const string BuiltIn = "BuiltIn";
             public const string Operators = "Operators";
             public const string Constructors = "Create";
             public const string MemberFunctions = "Actions";

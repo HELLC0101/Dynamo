@@ -9,6 +9,7 @@ using System.IO;
 using Dynamo.Configuration;
 using ProtoCore.AST.AssociativeAST;
 using DynamoUtilities;
+using Dynamo.Engine;
 
 namespace Dynamo.Tests
 {
@@ -586,6 +587,69 @@ namespace Dynamo.Tests
             });
 
             Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        [Category("UnitTests")]
+        public void FindFilesWithcaseinsensitiveFileExtensions()
+        {
+            var path = Path.GetTempPath();
+            string filePath = Path.Combine(path, "SaveFile.txt");
+            using (StreamWriter sw = new StreamWriter(filePath))
+            {
+                sw.Write("test");
+            }
+
+            Assert.AreEqual(filePath, DocumentationServices.FindFileInPaths("SaveFile", ".txt", new String[] { path }));
+            File.Delete(filePath);
+            filePath = Path.Combine(path, "SaveFile.TXT");
+            using (StreamWriter sw = new StreamWriter(filePath))
+            {
+                sw.Write("test");
+            }
+
+            Assert.AreEqual(filePath, DocumentationServices.FindFileInPaths("SaveFile", ".txt", new String[] { path }));
+            File.Delete(filePath);
+            filePath = Path.Combine(path, "SaveFile.tXt");
+            using (StreamWriter sw = new StreamWriter(filePath))
+            {
+                sw.Write("test");
+            }
+
+            Assert.AreEqual(filePath, DocumentationServices.FindFileInPaths("SaveFile", ".txt", new String[] { path }));
+            File.Delete(filePath);
+
+
+        }
+
+        [Test]
+        [Category("UnitTests")]
+        public void FindFilesRespectsPathOrder()
+        {
+            var path1 = Path.Combine(Path.GetTempPath(),"firstFindFile");
+            var path2 = Path.Combine(Path.GetTempPath(), "secondFindFile");
+
+            Directory.CreateDirectory(path1);
+            Directory.CreateDirectory(path2);
+
+            string filePath1 = Path.Combine(path1, "SaveFile.txt");
+            string filePath2 = Path.Combine(path2, "SaveFile.TXT");
+
+            using (StreamWriter sw = new StreamWriter(filePath1))
+            {
+                sw.Write("test");
+            }
+            using (StreamWriter sw = new StreamWriter(filePath2))
+            {
+                sw.Write("test");
+            }
+
+
+            Assert.AreEqual(filePath1, DocumentationServices.FindFileInPaths("SaveFile", ".txt", new String[] { path1,path2 }));
+            Assert.AreEqual(filePath2, DocumentationServices.FindFileInPaths("SaveFile", ".txt", new String[] { path2, path1 }));
+
+            Directory.Delete(path1,true);
+            Directory.Delete(path2,true);
         }
 
         [Test]

@@ -9,6 +9,7 @@ using NUnit.Framework;
 using ProtoCore;
 using TestServices;
 using System.Xml;
+using Dynamo.Configuration;
 
 namespace Dynamo.Tests
 {
@@ -24,7 +25,7 @@ namespace Dynamo.Tests
         {
             base.Setup();
 
-            libraryCore = new ProtoCore.Core(new Options { RootCustomPropertyFilterPathName = string.Empty });
+            libraryCore = new ProtoCore.Core(new Options());
             libraryCore.Compilers.Add(Language.Associative, new ProtoAssociative.Compiler(libraryCore));
             libraryCore.Compilers.Add(Language.Imperative, new ProtoImperative.Compiler(libraryCore));
             libraryCore.ParsingMode = ParseMode.AllowNonAssignment;
@@ -37,7 +38,9 @@ namespace Dynamo.Tests
                 PathResolver = pathResolver
             });
 
-            libraryServices = new LibraryServices(libraryCore, pathManager);
+            var settings = new PreferenceSettings();
+
+            libraryServices = new LibraryServices(libraryCore, pathManager, settings);
 
             RegisterEvents();
         }
@@ -254,6 +257,38 @@ namespace Dynamo.Tests
                 string functionName = function.FunctionName;
                 Assert.IsTrue(functionName != "MethodWithRefParameter" && functionName != "MethodWithOutParameter" && functionName != "MethodWithRefOutParameters");
             }
+        }
+
+        [Test]
+        [Category("UnitTests")]
+        public void TestBuiltInFunctionRecognition()
+        {
+            string nickName, categoryName;
+
+            nickName = "/"; categoryName = LibraryServices.Categories.Operators;
+            Assert.IsTrue(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = "*"; categoryName = LibraryServices.Categories.Operators;
+            Assert.IsTrue(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = "=="; categoryName = "";
+            Assert.IsFalse(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = "AllFalse"; categoryName = LibraryServices.Categories.BuiltIn;
+            Assert.IsTrue(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = "SetUnion"; categoryName = LibraryServices.Categories.BuiltIn;
+            Assert.IsTrue(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = "Reorder"; categoryName = "";
+            Assert.IsFalse(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = ""; categoryName = "";
+            Assert.IsFalse(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
+            nickName = ""; categoryName = LibraryServices.Categories.BuiltIn;
+            Assert.IsFalse(libraryServices.IsFunctionBuiltIn(categoryName, nickName));
+
         }
 
         #endregion

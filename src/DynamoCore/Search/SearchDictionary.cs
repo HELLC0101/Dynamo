@@ -39,6 +39,9 @@ namespace Dynamo.Search
             get { return entryDictionary.Count; }
         }
 
+        /// <summary>
+        /// Event is fired when an entry is added.
+        /// </summary>
         public event Action<V> EntryAdded;
 
         protected virtual void OnEntryAdded(V entry)
@@ -47,6 +50,9 @@ namespace Dynamo.Search
             if (handler != null) handler(entry);
         }
 
+        /// <summary>
+        /// Event is fired when an entry is removed.
+        /// </summary>
         public event Action<V> EntryRemoved;
 
         protected virtual void OnEntryRemoved(V entry)
@@ -55,6 +61,9 @@ namespace Dynamo.Search
             if (handler != null) handler(entry);
         }
 
+        /// <summary>
+        /// Event is fired when an entry is updated.
+        /// </summary>
         public event Action<V> EntryUpdated;
 
         protected virtual void OnEntryUpdated(V entry)
@@ -204,7 +213,7 @@ namespace Dynamo.Search
         }
 
         /// <summary>
-        ///     Get the elements with a given tag
+        ///     Returns the elements with a given tag
         /// </summary>
         /// <param name="tag"> The tag to match </param>
         /// <returns> The elements with the given tag </returns>
@@ -240,21 +249,21 @@ namespace Dynamo.Search
         {
             int numberOfMatchSymbols = 0;
             int numberOfAllSymbols = 0;
-
+            //for each word
             foreach (var subPattern in subPatterns)
-            {
+            { //for each continuous substring in the word starting with the full word
                 for (int i = subPattern.Length; i >= 1; i--)
                 {
                     var part = subPattern.Substring(0, i);
                     if (key.IndexOf(part) != -1)
-                    {
+                    {   //if we find a match record the amount of the match and goto the next word
                         numberOfMatchSymbols += part.Length;
                         break;
                     }
                 }
                 numberOfAllSymbols += subPattern.Length;
             }
-
+            //ratio of all symbols to matched partial words >.8 for match
             return (double)numberOfMatchSymbols / numberOfAllSymbols > 0.8;
         }
 
@@ -278,6 +287,9 @@ namespace Dynamo.Search
         internal IEnumerable<V> Search(string query, int minResultsForTolerantSearch = 0)
         {
             var searchDict = new Dictionary<V, double>();
+            // convert from a dictionary of searchElement:<tag,weight>
+            // to a dictionary of tag:<list<searchelement,weight>>
+            // which contains all nodes which share a tag 
 
             var tagDictionary = entryDictionary
                 .SelectMany(
@@ -334,7 +346,7 @@ namespace Dynamo.Search
         }
 		
         /// <summary>
-        /// Get all tags for search specified element
+        /// Returns all tags for search specified element
         /// </summary>
         /// <param name="element">The element to match</param>
         /// <returns>All tags of the given element</returns>
@@ -342,6 +354,18 @@ namespace Dynamo.Search
         {
             if (entryDictionary.ContainsKey(element))
                 return entryDictionary[element].Keys;
+            return null;
+        }
+
+        /// <summary>
+        /// Returns all weights for search specified element
+        /// </summary>
+        /// <param name="element">The element to match</param>
+        /// <returns>All tags of the given element</returns>
+        internal IEnumerable<double> GetWeights(V element)
+        {
+            if (entryDictionary.ContainsKey(element))
+                return entryDictionary[element].Values;
             return null;
         }
     }

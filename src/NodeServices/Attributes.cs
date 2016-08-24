@@ -47,7 +47,7 @@ namespace Autodesk.DesignScript.Runtime
     /// that implements IExtensionApplication interface.
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
-    public sealed class ExtensionApplicationAttribute : Attribute
+    internal sealed class ExtensionApplicationAttribute : Attribute
     {
         public ExtensionApplicationAttribute(Type entryPointType)
         {
@@ -83,7 +83,7 @@ namespace Autodesk.DesignScript.Runtime
     /// that implements IContextDataProvider interface.
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
-    public sealed class ContextDataProviderAttribute : Attribute
+    internal sealed class ContextDataProviderAttribute : Attribute
     {
         private Func<bool> mCapturesData = () => true;
 
@@ -312,10 +312,25 @@ namespace Autodesk.DesignScript.Runtime
     /// of scope. The life-cycle of parameter will have the same life-cycle as
     /// the return object.
     /// 
-    /// Note the return object should be reference type.
+    /// Note the type of return object should be reference type, either a
+    /// pointer or an array.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     public class KeepReferenceAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// This attribute is applied to member function of zero touch libary.
+    /// It indicates the return object should keep a reference to "this"
+    /// object so that even "this" object is out of scope, it will not be
+    /// disposed.
+    ///
+    /// Note the type of return object should be reference type, either a
+    /// pointer or an array.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public class KeepReferenceThisAttribute : Attribute
     {
     }
 }

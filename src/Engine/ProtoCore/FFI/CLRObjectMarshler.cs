@@ -12,6 +12,7 @@ using System.IO;
 using System.Xml;
 using System.Linq;
 using ProtoCore.Properties;
+using ProtoCore.Exceptions;
 
 namespace ProtoFFI
 {
@@ -434,8 +435,16 @@ namespace ProtoFFI
                 ++index;
             }
 
-            var retVal = dsi.runtime.rmem.Heap.AllocateArray(sv);
-            return retVal;
+            try
+            {
+                var retVal = dsi.runtime.rmem.Heap.AllocateArray(sv);
+                return retVal;
+            }
+            catch (RunOutOfMemoryException)
+            {
+                dsi.runtime.RuntimeCore.RuntimeStatus.LogWarning(ProtoCore.Runtime.WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                return StackValue.Null;
+            }
         }
 
         protected StackValue ToDSArray(IEnumerable enumerable, ProtoCore.Runtime.Context context, Interpreter dsi, ProtoCore.Type expectedDSType)
@@ -448,15 +457,34 @@ namespace ProtoFFI
             }
 
             var heap = dsi.runtime.rmem.Heap;
-            var retVal = heap.AllocateArray(svs.ToArray());
-            return retVal;
+
+            try
+            {
+                var retVal = heap.AllocateArray(svs.ToArray());
+                return retVal;
+            }
+            catch (RunOutOfMemoryException)
+            {
+                dsi.runtime.RuntimeCore.RuntimeStatus.LogWarning(ProtoCore.Runtime.WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                return StackValue.Null;
+            }
         }
 
         protected StackValue ToDSArray(IDictionary dictionary, ProtoCore.Runtime.Context context, Interpreter dsi, ProtoCore.Type expectedDSType)
         {
             var runtimeCore = dsi.runtime.RuntimeCore;
 
-            var svArray = dsi.runtime.rmem.Heap.AllocateArray(new StackValue[] {});
+            StackValue svArray;
+            try
+            {
+                svArray = dsi.runtime.rmem.Heap.AllocateArray(new StackValue[] { });
+            }
+            catch (RunOutOfMemoryException)
+            {
+                dsi.runtime.RuntimeCore.RuntimeStatus.LogWarning(ProtoCore.Runtime.WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                return StackValue.Null;
+            }
+
             DSArray array = dsi.runtime.rmem.Heap.ToHeapObject<DSArray>(svArray);
             foreach (var key in dictionary.Keys)
             {
@@ -609,7 +637,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Gets instance of the CLRObjectMarshler for a given core. If marshler
+        /// Returns instance of the CLRObjectMarshler for a given core. If marshler
         /// is not already created, it creates a new one.
         /// </summary>
         /// <param name="core">Core object.</param>
@@ -775,7 +803,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Get appropriate marshaler for given DS Type.
+        /// Returns appropriate marshaler for given DS Type.
         /// </summary>
         /// <param name="dsType">DS Type to which given objType needs to be marshaled.</param>
         /// <param name="objType">CLR object type that needs to marshal.</param>
@@ -810,7 +838,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Gets a primitive System.Type for the given DS type.
+        /// Returns a primitive System.Type for the given DS type.
         /// </summary>
         /// <param name="addressType">DS AddressType</param>
         /// <returns>System.Type</returns>
@@ -834,7 +862,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Gets marshaled DS type for the given System.Type
+        /// Returns marshaled DS type for the given System.Type
         /// </summary>
         /// <param name="type">System.Type</param>
         /// <returns>ProtoCore.Type as equivalent DS type for input System.Type</returns>
@@ -844,7 +872,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Gets equivalent DS type for the input System.Type
+        /// Returns equivalent DS type for the input System.Type
         /// </summary>
         /// <param name="type">System.Type</param>
         /// <returns>ProtoCore.Type</returns>
@@ -856,7 +884,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Gets the marshaled type for input System.Type as DS Pointer type
+        /// Returns the marshaled type for input System.Type as DS Pointer type
         /// </summary>
         /// <param name="type">System.Type</param>
         /// <returns>ProtoCore.Type</returns>
@@ -1097,7 +1125,7 @@ namespace ProtoFFI
         }
 
         /// <summary>
-        /// Get all the properties of input object, that are marked with 
+        /// Returns all the properties of input object, that are marked with 
         /// "Primary" Category.
         /// </summary>
         /// <param name="obj">Input FFI object</param>

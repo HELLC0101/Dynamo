@@ -1,4 +1,5 @@
-﻿using Dynamo.Graph.Nodes.CustomNodes;
+﻿using System;
+using Dynamo.Graph.Nodes.CustomNodes;
 using Dynamo.Wpf.ViewModels;
 using Microsoft.Practices.Prism.Commands;
 using DelegateCommand = Dynamo.UI.Commands.DelegateCommand;
@@ -10,6 +11,7 @@ namespace Dynamo.ViewModels
         private void InitializeDelegateCommands()
         {
             OpenCommand = new DelegateCommand(Open, CanOpen);
+            OpenIfSavedCommand = new DelegateCommand(OpenIfSaved, CanOpen);
             OpenRecentCommand = new DelegateCommand(OpenRecent, CanOpenRecent);
             SaveCommand = new DelegateCommand(Save, CanSave);
             SaveAsCommand = new DelegateCommand(SaveAs, CanSaveAs);
@@ -46,6 +48,7 @@ namespace Dynamo.ViewModels
             CopyCommand = new DelegateCommand(_ => model.Copy(), CanCopy);
             PasteCommand = new DelegateCommand(Paste, CanPaste);
             ToggleConsoleShowingCommand = new DelegateCommand(ToggleConsoleShowing, CanToggleConsoleShowing);
+            TogglePreviewBubblesShowingCommand = new DelegateCommand(TogglePreviewBubblesShowing);
             ForceRunExpressionCommand = new DelegateCommand(ForceRunExprCmd, RunSettingsViewModel.CanRunExpression);
             MutateTestDelegateCommand = new DelegateCommand(MutateTestCmd, RunSettingsViewModel.CanRunExpression);
             DisplayFunctionCommand = new DelegateCommand(DisplayFunction, CanDisplayFunction);
@@ -79,7 +82,7 @@ namespace Dynamo.ViewModels
             ShowNewPresetsDialogCommand = new DelegateCommand(ShowNewPresetStateDialogAndMakePreset, CanShowNewPresetStateDialog);
             NodeFromSelectionCommand = new DelegateCommand(CreateNodeFromSelection, CanCreateNodeFromSelection);            
        }
-
+        public DelegateCommand OpenIfSavedCommand { get; set; }
         public DelegateCommand OpenCommand { get; set; }
         public DelegateCommand ShowOpenDialogAndOpenResultCommand { get; set; }
         public DelegateCommand WriteToLogCmd { get; set; }
@@ -120,6 +123,7 @@ namespace Dynamo.ViewModels
         public DelegateCommand SaveImageCommand { get; set; }
         public DelegateCommand ShowSaveImageDialogAndSaveResultCommand { get; set; }
         public DelegateCommand ToggleConsoleShowingCommand { get; set; }
+        public DelegateCommand TogglePreviewBubblesShowingCommand { get; set; }
         public DelegateCommand ShowPackageManagerCommand { get; set; }
         public DelegateCommand ForceRunExpressionCommand { get; set; }
         public DelegateCommand MutateTestDelegateCommand { get; set; }

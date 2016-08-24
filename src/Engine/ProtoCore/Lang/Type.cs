@@ -7,6 +7,7 @@ using ProtoCore.Utils;
 using ProtoCore.Properties;
 using System.Linq;
 using System.Text;
+using ProtoCore.Exceptions;
 
 namespace ProtoCore
 {
@@ -300,12 +301,6 @@ namespace ProtoCore
             return classTable.GetTypeName(UID);
         }
 
-        public string GetType(Type type)
-        {
-            Validity.Assert(null != classTable);
-            return classTable.GetTypeName(type.UID);
-        }
-
         public int GetType(string ident)
         {
             Validity.Assert(null != classTable);
@@ -327,20 +322,6 @@ namespace ProtoCore
                 }
             }
             return type;
-        }
-
-        public static bool IsConvertibleTo(int fromType, int toType, Core core)
-        {
-            if (Constants.kInvalidIndex != fromType && Constants.kInvalidIndex != toType)
-            {
-                if (fromType == toType)
-                {
-                    return true;
-                }
-
-                return core.ClassTable.ClassNodes[fromType].ConvertibleTo(toType);
-            }
-            return false;
         }
 
         //@TODO: Factor this into the type system
@@ -440,8 +421,16 @@ namespace ProtoCore
 
                     //Upcast once
                     StackValue coercedValue = Coerce(sv, newTargetType, runtimeCore);
-                    StackValue newSv = rmem.Heap.AllocateArray(new StackValue[] { coercedValue });
-                    return newSv;
+                    try
+                    {
+                        StackValue newSv = rmem.Heap.AllocateArray(new StackValue[] { coercedValue });
+                        return newSv;
+                    }
+                    catch (RunOutOfMemoryException)
+                    {
+                        runtimeCore.RuntimeStatus.LogWarning(Runtime.WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                        return StackValue.Null;
+                    }
                 }
                 else
                 {
@@ -454,8 +443,16 @@ namespace ProtoCore
 
                     //Upcast once
                     StackValue coercedValue = Coerce(sv, newTargetType, runtimeCore);
-                    StackValue newSv = rmem.Heap.AllocateArray(new StackValue[] { coercedValue });
-                    return newSv;
+                    try
+                    {
+                        StackValue newSv = rmem.Heap.AllocateArray(new StackValue[] { coercedValue });
+                        return newSv;
+                    }
+                    catch (RunOutOfMemoryException)
+                    {
+                        runtimeCore.RuntimeStatus.LogWarning(Runtime.WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                        return StackValue.Null;
+                    }
                 }
             }
 

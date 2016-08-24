@@ -19,13 +19,18 @@ namespace Dynamo.Graph.Nodes.CustomNodes
     /// </summary>
     [NodeName("Custom Node")]
     [NodeDescription("FunctionDescription",typeof(Dynamo.Properties.Resources))]
-    [IsInteractive(false)]
-    [NodeSearchable(false)]
     [IsMetaNode]
     [AlsoKnownAs("Dynamo.Nodes.Function")]
     public class Function 
         : FunctionCallBase<CustomNodeController<CustomNodeDefinition>, CustomNodeDefinition>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Function"/> class.
+        /// </summary>
+        /// <param name="def">CustomNode definition.</param>
+        /// <param name="nickName">Nickname.</param>
+        /// <param name="description">Description.</param>
+        /// <param name="category">Category.</param>
         public Function(
             CustomNodeDefinition def, string nickName, string description, string category)
             : base(new CustomNodeController<CustomNodeDefinition>(def))
@@ -37,6 +42,9 @@ namespace Dynamo.Graph.Nodes.CustomNodes
             Category = category;
         }
 
+        /// <summary>
+        /// Returns customNode definition.
+        /// </summary>
         public CustomNodeDefinition Definition { get { return Controller.Definition; } }
         
         internal override IEnumerable<AssociativeNode> BuildAst(List<AssociativeNode> inputAstNodes, CompilationContext context)
@@ -44,7 +52,7 @@ namespace Dynamo.Graph.Nodes.CustomNodes
             return Controller.BuildAst(this, inputAstNodes);
         }
 
-        #region Serialization/Deserialization methods
+#region Serialization/Deserialization methods
 
         protected override void SerializeCore(XmlElement element, SaveContext context)
         {
@@ -191,7 +199,7 @@ namespace Dynamo.Graph.Nodes.CustomNodes
                         }
                     }
 
-                    #region Legacy output support
+#region Legacy output support
 
                     else if (subNode.Name.Equals("Output"))
                     {
@@ -203,7 +211,7 @@ namespace Dynamo.Graph.Nodes.CustomNodes
                             OutPortData.Add(data);
                     }
 
-                    #endregion
+#endregion
                 }
 
                 RegisterAllPorts();
@@ -220,15 +228,10 @@ namespace Dynamo.Graph.Nodes.CustomNodes
                 Description = descNode.Attributes["value"].Value;
         }
 
-        #endregion
+#endregion
 
         private void ValidateDefinition(CustomNodeDefinition def)
         {
-            if (def == null)
-            {
-                throw new ArgumentNullException("def");
-            }
-
             if (def.IsProxy)
             {
                 this.Error(Properties.Resources.CustomNodeNotLoaded);
@@ -239,6 +242,11 @@ namespace Dynamo.Graph.Nodes.CustomNodes
             }
         }
 
+
+        /// <summary>
+        ///     Validates passed Custom Node definition and synchronizes node with it.
+        /// </summary>
+        /// <param name="def">Custom Node definition.</param>
         public void ResyncWithDefinition(CustomNodeDefinition def)
         {
             ValidateDefinition(def);
@@ -247,21 +255,31 @@ namespace Dynamo.Graph.Nodes.CustomNodes
         }
     }
 
+    /// <summary>
+    ///     Represents function entry point.
+    ///     It contains functionality to manage expressions and applies input values to function logic.
+    /// </summary>
     [NodeName("Input")]
     [NodeCategory(BuiltinNodeCategories.CORE_INPUT)]
     [NodeDescription("SymbolNodeDescription",typeof(Properties.Resources))]
-    [NodeSearchTags("SymbolSearchTags", typeof(Properties.Resources))]
-    [IsInteractive(false)]
-    [NotSearchableInHomeWorkspace]
+    [NodeSearchTags("SymbolSearchTags", typeof(Properties.Resources))]    
     [IsDesignScriptCompatible]
     [AlsoKnownAs("Dynamo.Nodes.Symbol")]
     public class Symbol : NodeModel
     {
         private string inputSymbol = String.Empty;
         private string nickName = String.Empty;
-        public ElementResolver  ElementResolver { get; set;}
         private ElementResolver workspaceElementResolver;
 
+        /// <summary>
+        ///     Responsible for resolving 
+        ///     a partial class name to its fully resolved name
+        /// </summary>
+        public ElementResolver ElementResolver { get; set; }
+        
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="Symbol"/> class.
+        /// </summary>
         public Symbol()
         {
             OutPortData.Add(new PortData("", Properties.Resources.ToolTipSymbol));
@@ -275,6 +293,9 @@ namespace Dynamo.Graph.Nodes.CustomNodes
             ElementResolver = new ElementResolver();
         }
 
+        /// <summary>
+        ///     Represents string input. 
+        /// </summary>
         public string InputSymbol
         {
             get { return inputSymbol; }
@@ -321,12 +342,19 @@ namespace Dynamo.Graph.Nodes.CustomNodes
             }
         }
 
+        /// <summary>
+        ///     Returns tuple of Input parameter and its type.
+        /// </summary>
         public TypedParameter Parameter
         {
             get;
             private set;
         }
 
+        /// <summary>
+        ///     Returns <see cref="IdentifierNode"/> by passed output index.
+        /// </summary>
+        /// <param name="outputIndex">Output index.</param>
         public override IdentifierNode GetAstIdentifierForOutputIndex(int outputIndex)
         {
             return
@@ -442,11 +470,13 @@ namespace Dynamo.Graph.Nodes.CustomNodes
         }
     }
 
+    /// <summary>
+    ///     Represents function output.
+    ///     It contains functionality to manage expressions and store function's node value to pass. 
+    /// </summary>
     [NodeName("Output")]
     [NodeCategory(BuiltinNodeCategories.CORE_INPUT)]
-    [NodeDescription("OutputNodeDescription",typeof(Dynamo.Properties.Resources))]
-    [IsInteractive(false)]
-    [NotSearchableInHomeWorkspace]
+    [NodeDescription("OutputNodeDescription",typeof(Dynamo.Properties.Resources))]    
     [IsDesignScriptCompatible]
     [AlsoKnownAs("Dynamo.Nodes.Output")]
     public class Output : NodeModel
@@ -583,14 +613,7 @@ namespace Dynamo.Graph.Nodes.CustomNodes
                 }
 
                 var node = parseParam.ParsedNodes.First() as BinaryExpressionNode;
-                if (node == null)
-                {
-                    if (parseParam.Errors.Any())
-                    {
-                        this.Error(Properties.Resources.WarningInvalidOutput);
-                    }
-                }
-                else
+                if (node != null)
                 {
                     var leftIdent = node.LeftNode as IdentifierNode;
                     var rightIdent = node.RightNode as IdentifierNode;
@@ -600,21 +623,8 @@ namespace Dynamo.Graph.Nodes.CustomNodes
                     {
                         outputIdentifier = rightIdent;
                     }
-                    // "x:int" will be compiled to "x:int = tTypedIdent0;"
-                    else if (rightIdent != null && rightIdent.Value.StartsWith(Constants.kTempVarForTypedIdentifier))
-                    {
-                        outputIdentifier = leftIdent;
-                    }
                     else
                     {
-                        if (parseParam.Errors.Any())
-                        {
-                            this.Error(parseParam.Errors.First().Message);
-                        }
-                        else
-                        {
-                            this.Warning(Properties.Resources.WarningInvalidOutput);
-                        }
                         outputIdentifier = leftIdent;
                     }
                     return outputIdentifier != null;

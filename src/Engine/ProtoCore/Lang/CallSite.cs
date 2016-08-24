@@ -225,10 +225,20 @@ namespace ProtoCore
 
             public override System.Type BindToType(string assemblyName, string typeName)
             {
-                var result = AppDomain.CurrentDomain.GetAssemblies()
-                    .Where(a => !a.IsDynamic)
-                    .SelectMany(a => a.GetTypes())
-                    .FirstOrDefault(t => t.FullName == typeName);
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic);
+                var types = new List<System.Type>();
+                foreach (var a in assemblies)
+                {
+                    try
+                    {
+                        types.AddRange(a.GetTypes());
+                    }
+                    catch (ReflectionTypeLoadException)
+                    {
+                        // We ignore assembly loading exceptions that are thrown here when their dependencies cannot be found
+                    }
+                }
+                var result = types.FirstOrDefault(t => t.FullName == typeName);
 
                 return result;
             }
@@ -603,7 +613,7 @@ namespace ProtoCore
         }
 
         /// <summary>
-        /// Get all serializables that were created historically, but
+        /// Returns all serializables that were created historically, but
         /// were not re-created in the most recent graph update.
         /// </summary>
         public IList<ISerializable> GetOrphanedSerializables()
@@ -969,7 +979,7 @@ namespace ProtoCore
         }
 
         /// <summary>
-        /// Get complete match attempts to locate a function endpoint where 1 FEP matches all of the requirements for dispatch
+        /// Returns complete match attempts to locate a function endpoint where 1 FEP matches all of the requirements for dispatch
         /// </summary>
         /// <param name="context"></param>
         /// <param name="arguments"></param>
@@ -1013,7 +1023,7 @@ namespace ProtoCore
         }
 
        /// <summary>
-        /// Get the function group associated with this callsite
+        /// Returns the function group associated with this callsite
         /// </summary>
         /// <param name="core"></param>
         /// <returns></returns>
@@ -1118,11 +1128,10 @@ namespace ProtoCore
                 //If this has failed, we have multiple feps, which can't be distiquished by class hiearchy. Emit a warning and select one
                 StringBuilder possibleFuncs = new StringBuilder();
                 possibleFuncs.Append(Resources.MultipleFunctionsFound);
+                possibleFuncs.AppendLine();
+                possibleFuncs.AppendLine();
                 foreach (FunctionEndPoint fep in feps)
-                    possibleFuncs.AppendLine("\t" + fep.ToString());
-
-
-                possibleFuncs.AppendLine(string.Format(Resources.ErrorCode, "{DCE486C0-0975-49F9-BE2C-2E7D8CCD17DD}"));
+                    possibleFuncs.AppendLine("    " + fep.ToString());
 
                 runtimeCore.RuntimeStatus.LogWarning(WarningID.AmbiguousMethodDispatch, possibleFuncs.ToString());
             }
@@ -1618,8 +1627,16 @@ namespace ProtoCore
                     retTrace.NestedData[i] = cleanRetTrace;
                 }
 
-                StackValue ret = runtimeCore.RuntimeMemory.Heap.AllocateArray(retSVs);
-                return ret;
+                try
+                {
+                    StackValue ret = runtimeCore.RuntimeMemory.Heap.AllocateArray(retSVs);
+                    return ret;
+                }
+                catch (RunOutOfMemoryException)
+                {
+                    runtimeCore.RuntimeStatus.LogWarning(WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                    return StackValue.Null;
+                }
             }
             else
             {
@@ -1721,9 +1738,16 @@ namespace ProtoCore
                     retTrace.NestedData[i] = cleanRetTrace;
                 }
 
-
-                StackValue ret = runtimeCore.RuntimeMemory.Heap.AllocateArray(retSVs);
-                return ret;
+                try
+                {
+                    StackValue ret = runtimeCore.RuntimeMemory.Heap.AllocateArray(retSVs);
+                    return ret;
+                }
+                catch (RunOutOfMemoryException)
+                {
+                    runtimeCore.RuntimeStatus.LogWarning(WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                    return StackValue.Null;
+                }
             }
         }
 
@@ -1873,8 +1897,16 @@ namespace ProtoCore
                 
                 for (int p = 0; p < promotionsRequired; p++)
                 {
-                    StackValue newSV = runtimeCore.RuntimeMemory.Heap.AllocateArray(new StackValue[1] { oldSv });
-                    oldSv = newSV;
+                    try
+                    {
+                        StackValue newSV = runtimeCore.RuntimeMemory.Heap.AllocateArray(new StackValue[1] { oldSv });
+                        oldSv = newSV;
+                    }
+                    catch (RunOutOfMemoryException)
+                    {
+                        runtimeCore.RuntimeStatus.LogWarning(WarningID.RunOutOfMemory, Resources.RunOutOfMemory);
+                        oldSv = StackValue.Null;
+                    }
                 }
 
                 newArgs[i] = oldSv;
@@ -1948,7 +1980,7 @@ namespace ProtoCore
         #endregion
 
         /// <summary>
-        /// Get a flat collection of ISerializable objects from a serialized representation of a SingleRunTraceData object.
+        /// Returns a flat collection of ISerializable objects from a serialized representation of a SingleRunTraceData object.
         /// </summary>
         /// <param name="callSiteData">The serialized representation of a SingleRunTraceData object.</param>
         /// <returns>A flat collection of ISerializable objects.</returns>

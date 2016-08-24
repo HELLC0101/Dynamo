@@ -30,7 +30,7 @@ namespace Dynamo.Graph.Nodes
         #region private members
 
         private bool overrideNameWithNickName;
-        private LacingStrategy argumentLacing = LacingStrategy.First;
+        private LacingStrategy argumentLacing = LacingStrategy.Shortest;
         private bool displayLabels;
         private bool isUpstreamVisible;
         private bool isVisible;
@@ -74,7 +74,7 @@ namespace Dynamo.Graph.Nodes
         public virtual string CreationName { get { return this.Name; } }
 
         /// <summary>
-        /// This property gets all the Upstream Nodes  for a given node, ONLY after the graph is loaded. 
+        /// This property queries all the Upstream Nodes  for a given node, ONLY after the graph is loaded. 
         /// This property is computed in ComputeUpstreamOnDownstreamNodes function
         /// </summary>
         internal HashSet<NodeModel> UpstreamCache = new HashSet<NodeModel>();
@@ -585,7 +585,7 @@ namespace Dynamo.Graph.Nodes
         }
 
         /// <summary>
-        ///     Get the description from type information
+        ///     Returns the description from type information
         /// </summary>
         /// <returns>The value or "No description provided"</returns>
         public string GetDescriptionStringFromAttributes()
@@ -737,7 +737,7 @@ namespace Dynamo.Graph.Nodes
         }
 
         /// <summary>
-        /// Gets the downstream nodes for the given node.
+        /// Returns the downstream nodes for the given node.
         /// </summary>
         /// <param name="node">The node.</param>
         /// <param name="gathered">The gathered.</param>
@@ -796,7 +796,7 @@ namespace Dynamo.Graph.Nodes
         }
 
         /// <summary>
-        ///     Gets the most recent value of this node stored in an EngineController that has evaluated it.
+        /// Returns the most recent value of this node stored in an EngineController that has evaluated it.
         /// </summary>
         /// <param name="outPortIndex"></param>
         /// <param name="engine"></param>
@@ -973,21 +973,36 @@ namespace Dynamo.Graph.Nodes
         /// </summary>
         /// <param name="inputs"></param>
         /// <returns></returns>
-        public void AppendReplicationGuides(List<AssociativeNode> inputs)
+        public void UseLevelAndReplicationGuide(List<AssociativeNode> inputs)
         {
             if (inputs == null || !inputs.Any())
                 return;
 
+            for (int i = 0; i < inputs.Count; i++)
+            {
+                if (InPorts[i].UseLevels)
+                {
+                    inputs[i] = AstFactory.AddAtLevel(inputs[i], -InPorts[i].Level, InPorts[i].ShouldKeepListStructure);
+                }
+            }
+
             switch (ArgumentLacing)
             {
+                case LacingStrategy.Shortest:
+                    for (int i = 0; i < inputs.Count(); ++i)
+                    {
+                        if (InPorts[i].UseLevels)
+                        {
+                            inputs[i] = AstFactory.AddReplicationGuide(inputs[i], new List<int> { 1 }, false);
+                        }
+                    }
+                    break;
+
                 case LacingStrategy.Longest:
 
                     for (int i = 0; i < inputs.Count(); ++i)
                     {
-                        inputs[i] = AstFactory.AddReplicationGuide(
-                                                inputs[i],
-                                                new List<int> { 1 },
-                                                true);
+                        inputs[i] = AstFactory.AddReplicationGuide(inputs[i], new List<int> { 1 }, true);
                     }
                     break;
 
@@ -996,10 +1011,7 @@ namespace Dynamo.Graph.Nodes
                     int guide = 1;
                     for (int i = 0; i < inputs.Count(); ++i)
                     {
-                        inputs[i] = AstFactory.AddReplicationGuide(
-                                                inputs[i],
-                                                new List<int> { guide },
-                                                false);
+                        inputs[i] = AstFactory.AddReplicationGuide(inputs[i], new List<int> { guide }, false);
                         guide++;
                     }
                     break;
@@ -1506,15 +1518,7 @@ namespace Dynamo.Graph.Nodes
                     else
                     {
                         p = new PortModel(portType, this, data);
-
-                        p.PropertyChanged += delegate(object sender, PropertyChangedEventArgs args)
-                        {
-                            if (args.PropertyName == "UsingDefaultValue")
-                            {
-                                OnNodeModified();
-                            }
-                        };
-                        
+                        p.PropertyChanged += OnPortPropertyChanged;
                         InPorts.Add(p);
                     }
 
@@ -1536,6 +1540,22 @@ namespace Dynamo.Graph.Nodes
             }
 
             return null;
+        }
+
+        private void OnPortPropertyChanged(object sender, PropertyChangedEventArgs args)
+        {
+            switch (args.PropertyName)
+            {
+                case "UsingDefaultValue":
+                case "Level":
+                case "UseLevels":
+                case "ShouldKeepListStructure":
+                    OnNodeModified();
+                    break;
+
+                default:
+                    break;
+            }
         }
 
         /// <summary>
@@ -1730,6 +1750,58 @@ namespace Dynamo.Graph.Nodes
                     }
                     return true;
 
+                case "UseLevels":
+                    var parts = value.Split(new[] { ':' });
+                    if (parts != null && parts.Count() == 2)
+                    {
+                        int portIndex;
+                        bool useLevels;
+                        if (int.TryParse(parts[0], out portIndex) &&
+                            bool.TryParse(parts[1], out useLevels))
+                        {
+                            inPorts[portIndex].UseLevels = useLevels;
+                        }
+                    }
+                    return true;
+
+                case "KeepListStructure":
+                    var keepListStructureInfos = value.Split(new[] { ':' });
+                    if (keepListStructureInfos != null && keepListStructureInfos.Count() == 2)
+                    {
+                        int portIndex;
+                        bool keepListStructure;
+                        if (int.TryParse(keepListStructureInfos[0], out portIndex) &&
+                            bool.TryParse(keepListStructureInfos[1], out keepListStructure))
+                        {
+                            inPorts[portIndex].ShouldKeepListStructure = keepListStructure;
+                            if (keepListStructure)
+                            {
+                                // Only allow one input port to keep list structure
+                                for (int i = 0; i < inPorts.Count; i++)
+                                {
+                                    if (portIndex != i && inPorts[i].ShouldKeepListStructure)
+                                    {
+                                        inPorts[i].ShouldKeepListStructure = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return true;
+
+                case "ChangeLevel":
+                    var changeLevelInfos = value.Split(new[] { ':' });
+                    if (changeLevelInfos != null && changeLevelInfos.Count() == 2)
+                    {
+                        int portIndex;
+                        int level;
+                        if (int.TryParse(changeLevelInfos[0], out portIndex) &&
+                            int.TryParse(changeLevelInfos[1], out level))
+                        {
+                            inPorts[portIndex].Level = level;
+                        }
+                    }
+                    return true;
             }
 
             return base.UpdateValueCore(updateValueParams);
@@ -1763,16 +1835,21 @@ namespace Dynamo.Graph.Nodes
             helper.SetAttribute("IsFrozen", isFrozenExplicitly);
             helper.SetAttribute("isPinned", PreviewPinned);
 
-            var portsWithDefaultValues =
-                inPorts.Select((port, index) => new { port, index })
-                   .Where(x => x.port.UsingDefaultValue);
+            var portIndexTuples = inPorts.Select((port, index) => new { port, index });
 
             //write port information
-            foreach (var port in portsWithDefaultValues)
+            foreach (var t in portIndexTuples)
             {
                 XmlElement portInfo = element.OwnerDocument.CreateElement("PortInfo");
-                portInfo.SetAttribute("index", port.index.ToString(CultureInfo.InvariantCulture));
-                portInfo.SetAttribute("default", true.ToString());
+                portInfo.SetAttribute("index", t.index.ToString(CultureInfo.InvariantCulture));
+                portInfo.SetAttribute("default", t.port.UsingDefaultValue.ToString());
+
+                if (t.port.UseLevels)
+                {
+                    portInfo.SetAttribute("useLevels", t.port.UseLevels.ToString());
+                    portInfo.SetAttribute("level", t.port.Level.ToString());
+                    portInfo.SetAttribute("shouldKeepListStructure", t.port.ShouldKeepListStructure.ToString());
+                }
                 element.AppendChild(portInfo);
             }
 
@@ -1827,8 +1904,38 @@ namespace Dynamo.Graph.Nodes
                     if (index < InPorts.Count)
                     {
                         portInfoProcessed.Add(index);
-                        bool def = bool.Parse(subNode.Attributes["default"].Value);
-                        inPorts[index].UsingDefaultValue = def;
+
+                        var attrValue = subNode.Attributes["default"];
+                        if (attrValue != null)
+                        {
+                            bool def = false;
+                            bool.TryParse(subNode.Attributes["default"].Value, out def);
+                            inPorts[index].UsingDefaultValue = def;
+                        }
+
+                        attrValue = subNode.Attributes["useLevels"];
+                        bool useLevels = false;
+                        if (attrValue != null)
+                        {
+                            bool.TryParse(attrValue.Value, out useLevels);
+                        }
+                        inPorts[index].UseLevels = useLevels;
+
+                        attrValue = subNode.Attributes["shouldKeepListStructure"];
+                        bool shouldKeepListStructure = false;
+                        if (attrValue != null)
+                        {
+                            bool.TryParse(attrValue.Value, out shouldKeepListStructure);
+                        }
+                        inPorts[index].ShouldKeepListStructure = shouldKeepListStructure;
+
+                        attrValue = subNode.Attributes["level"];
+                        if (attrValue != null)
+                        {
+                            int level = 1;
+                            int.TryParse(attrValue.Value, out level);
+                            InPorts[index].Level = level;
+                        }
                     }
                 }
             }
@@ -2022,7 +2129,7 @@ namespace Dynamo.Graph.Nodes
         }
 
         /// <summary>
-        /// Gets list of drawable Ids as registered with visualization manager 
+        /// Returns list of drawable Ids as registered with visualization manager 
         /// for all the output port of the given node.
         /// </summary>
         /// <returns>List of Drawable Ids</returns>
@@ -2040,7 +2147,7 @@ namespace Dynamo.Graph.Nodes
         }
 
         /// <summary>
-        /// Gets the drawable Id as registered with visualization manager for
+        /// Returns the drawable Id as registered with visualization manager for
         /// the given output port on the given node.
         /// </summary>
         /// <param name="outPortIndex">Output port index</param>
@@ -2089,6 +2196,21 @@ namespace Dynamo.Graph.Nodes
             return migrationData;
         }
 
+        // Migrate NodeModel's LacingStrategy.Shortest to LacingStrategy.Auto
+        // Temporarily disabled in 1.2 to keep semantic versioning and will 
+        // enable in 2.0.
+        /*
+        [NodeMigration(@from: "1.2.0.0")]
+        public static NodeMigrationData MigrateShortestLacingToAutoLacing(NodeMigrationData data)
+        {
+            var migrationData = new NodeMigrationData(data.Document);
+            XmlElement node = data.MigratedNodes.ElementAt(0);
+            MigrationManager.ReplaceAttributeValue(node, "lacing", "Shortest", "Auto");
+            migrationData.AppendNode(node);
+            return migrationData;
+        }
+        */
+
         #endregion
 
         public bool ShouldDisplayPreview
@@ -2112,6 +2234,9 @@ namespace Dynamo.Graph.Nodes
         }
     }
 
+    /// <summary>
+    /// Represents nodes states.
+    /// </summary>
     public enum ElementState
     {
         Dead,
@@ -2122,15 +2247,24 @@ namespace Dynamo.Graph.Nodes
         AstBuildBroken
     };
 
+    /// <summary>
+    /// Defines Lacing strategy for nodes.
+    /// Learn more about lacing here: http://dynamoprimer.com/06_Designing-with-Lists/6-1_whats-a-list.html
+    /// </summary>
     public enum LacingStrategy
     {
         Disabled,
         First,
         Shortest,
         Longest,
-        CrossProduct
+        CrossProduct,
+        Auto
     };
 
+    /// <summary>
+    /// Defines Enum for Mouse events.
+    /// Used in port snapping.
+    /// </summary>
     public enum PortEventType
     {
         MouseEnter,
@@ -2138,14 +2272,9 @@ namespace Dynamo.Graph.Nodes
         MouseLeftButtonDown
     };
 
-    public enum PortPosition
-    {
-        First,
-        Top,
-        Middle,
-        Last
-    }
-
+    /// <summary>
+    /// Returns one of the possible values(none, top, bottom) where a port can be snapped.
+    /// </summary>
     [Flags]
     public enum SnapExtensionEdges
     {
@@ -2154,18 +2283,25 @@ namespace Dynamo.Graph.Nodes
         Bottom = 0x2
     }
 
-    public delegate void PortsChangedHandler(object sender, EventArgs e);
-
     internal delegate void DispatchedToUIThreadHandler(object sender, UIDispatcherEventArgs e);
 
+    /// <summary>
+    /// This class represents the UIDIspatcher thread event arguments.
+    /// </summary>
     public class UIDispatcherEventArgs : EventArgs
     {
+        /// <summary>
+        /// Creates UIDispatcherEventArgs.
+        /// </summary>
+        /// <param name="a">action to call on UI thread</param>
         public UIDispatcherEventArgs(Action a)
         {
             ActionToDispatch = a;
         }
 
+        /// <summary>
+        /// Action to call on UI thread.
+        /// </summary>
         public Action ActionToDispatch { get; set; }
-        public List<object> Parameters { get; set; }
     }
 }

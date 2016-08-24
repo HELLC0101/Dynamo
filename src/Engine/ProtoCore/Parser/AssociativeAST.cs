@@ -1686,7 +1686,7 @@ namespace ProtoCore.AST.AssociativeAST
         public bool IsObsolete { get { return !string.IsNullOrEmpty(ObsoleteMessage); } }
 
         /// <summary>
-        /// Gets/Sets description for the method.
+        /// Returns/Sets description for the method.
         /// </summary>
         public string Description { get; set; }
 
@@ -1721,7 +1721,6 @@ namespace ProtoCore.AST.AssociativeAST
     public class ConstructorDefinitionNode : AssociativeNode
     {
         public int LocalVariableCount { get; set; }
-        public List<AssociativeNode> Attributes { get; set; }
         public ArgumentSignatureNode Signature { get; set; }
         public Type ReturnType { get; set; }
         public CodeBlockNode FunctionBody { get; set; }
@@ -1739,10 +1738,6 @@ namespace ProtoCore.AST.AssociativeAST
             : base(rhs)
         {
             LocalVariableCount = rhs.LocalVariableCount;
-
-            Attributes = new List<AssociativeNode>();
-            if (null != rhs.Attributes)
-                Attributes.AddRange(rhs.Attributes.Select(NodeUtils.Clone));
 
             if (null != rhs.Signature)
                 Signature = NodeUtils.Clone(rhs.Signature) as ArgumentSignatureNode;
@@ -1796,8 +1791,7 @@ namespace ProtoCore.AST.AssociativeAST
             return LocalVariableCount == otherNode.LocalVariableCount &&
                    EqualityComparer<ArgumentSignatureNode>.Default.Equals(Signature, otherNode.Signature) &&
                    ReturnType.Equals(otherNode.ReturnType) &&
-                   EqualityComparer<CodeBlockNode>.Default.Equals(FunctionBody, otherNode.FunctionBody) &&
-                   Attributes.SequenceEqual(otherNode.Attributes); 
+                   EqualityComparer<CodeBlockNode>.Default.Equals(FunctionBody, otherNode.FunctionBody); 
         }
 
         public override int GetHashCode()
@@ -1808,11 +1802,8 @@ namespace ProtoCore.AST.AssociativeAST
             var returnTypeHashCode = ReturnType.GetHashCode();
             var functionBodyHashCode =
                 (FunctionBody == null ? base.GetHashCode() : FunctionBody.GetHashCode());
-            var attributesHashCode =
-                (Attributes == null ? base.GetHashCode() : Attributes.GetHashCode());
 
-            return localVarsHashCode ^ signatureHashCode ^
-                returnTypeHashCode ^ functionBodyHashCode ^ attributesHashCode;
+            return localVarsHashCode ^ signatureHashCode ^ returnTypeHashCode ^ functionBodyHashCode;
         }
         public override AstKind Kind
         {
@@ -1839,11 +1830,9 @@ namespace ProtoCore.AST.AssociativeAST
         public Type ReturnType { get; set; }
         public List<AssociativeNode> Attributes { get; set; }
         public ArgumentSignatureNode Signature { get; set; }
-        public AssociativeNode Pattern { get; set; }
         public bool IsExternLib { get; set; }
         public bool IsBuiltIn { get; set; }
         public BuiltInMethods.MethodID BuiltInMethodId { get; set; }
-        public bool IsDNI { get; set; }
         public string ExternLibName { get; set; }
         public CompilerDefinitions.AccessModifier Access { get; set; }
         public bool IsStatic { get; set; }
@@ -1864,8 +1853,6 @@ namespace ProtoCore.AST.AssociativeAST
 
             IsBuiltIn = false;
             Signature = new ArgumentSignatureNode();
-
-            Attributes = new List<AssociativeNode>();
         }
 
         public FunctionDefinitionNode(FunctionDefinitionNode rhs)
@@ -1877,12 +1864,9 @@ namespace ProtoCore.AST.AssociativeAST
 
             ReturnType = rhs.ReturnType;
 
-            Attributes = rhs.Attributes;
             Signature = new ArgumentSignatureNode(rhs.Signature);
-            Pattern = rhs.Pattern;
             IsExternLib = rhs.IsExternLib;
             BuiltInMethodId = rhs.BuiltInMethodId;
-            IsDNI = rhs.IsDNI;
             ExternLibName = rhs.ExternLibName;
             Access = rhs.Access;
             IsStatic = rhs.IsStatic;
@@ -1903,7 +1887,6 @@ namespace ProtoCore.AST.AssociativeAST
 
             bool equalSignature = EqualityComparer<ArgumentSignatureNode>.Default.Equals(Signature, otherNode.Signature) 
                 && ReturnType.Equals(otherNode.ReturnType) 
-                && Attributes.SequenceEqual(otherNode.Attributes)
                 && Name.Equals(otherNode.Name);
 
             bool equalBody = FunctionBody.Equals(otherNode.FunctionBody);
@@ -1916,11 +1899,8 @@ namespace ProtoCore.AST.AssociativeAST
             var signatureHashCode =
                 (Signature == null ? base.GetHashCode() : Signature.GetHashCode());
             var returnTypeHashCode = ReturnType.GetHashCode();
-            var attributesHashCode =
-                (Attributes == null ? base.GetHashCode() : Attributes.GetHashCode());
 
-            return  signatureHashCode ^
-                returnTypeHashCode ^ attributesHashCode;
+            return  signatureHashCode ^ returnTypeHashCode;
         }
 
         public override string ToString()
@@ -2109,7 +2089,6 @@ namespace ProtoCore.AST.AssociativeAST
         public int SSAExpressionUID { get; set; }
         public int ExpressionUID { get; set; }
         public int SSASubExpressionID { get; set; }
-        public int modBlkUID { get; set; }
         public Guid guid { get; set; }
         public int OriginalAstID { get; set; }    // The original AST that this Binarynode was derived from
         public bool isSSAAssignment { get; set; }
@@ -3295,6 +3274,35 @@ namespace ProtoCore.AST.AssociativeAST
 
             return repNode;
         }
+
+        /// <summary>
+        /// Create a copy of node with at-level. E.g., xs@-2
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="level"></param>
+        /// <param name="shouldKeepListStructure"></param>
+        /// <returns></returns>
+        public static AssociativeNode AddAtLevel(AssociativeNode node, int level, bool shouldKeepListStructure)
+        {
+            if (node == null)
+                throw new ArgumentNullException("node");
+
+            ArrayNameNode repNode = null;
+            if (node is ArrayNameNode)
+            {
+                repNode = NodeUtils.Clone(node) as ArrayNameNode;
+            }
+            else
+            {
+                return node;
+            }
+
+            repNode.AtLevel = new AtLevelNode();
+            repNode.AtLevel.IsDominant = shouldKeepListStructure;
+            repNode.AtLevel.Level = level;
+
+            return repNode;
+        }
     }
 
     public static class AstExtensions
@@ -3307,18 +3315,6 @@ namespace ProtoCore.AST.AssociativeAST
             to.line = from.line;
             to.endLine = from.endLine;
             to.skipMe = from.skipMe;
-        }
-
-        public static ImperativeAST.ArgumentSignatureNode ToImperativeNode(this ArgumentSignatureNode aNode)
-        {
-            if (aNode == null) return null;
-
-            var result = new ImperativeAST.ArgumentSignatureNode
-            {
-                Arguments = aNode.Arguments.Select(ToImperativeNode).ToList()
-            };
-            CopyProps(aNode, result);
-            return result;
         }
 
         public static ImperativeAST.ArrayNameNode ToImperativeNode(this ArrayNameNode aNode)
@@ -3411,15 +3407,6 @@ namespace ProtoCore.AST.AssociativeAST
             return result;
         }
 
-        public static ImperativeAST.DefaultArgNode ToImperativeNode(this DefaultArgNode aNode)
-        {
-            if (aNode == null) return null;
-
-            var result = new ImperativeAST.DefaultArgNode();
-            CopyProps(aNode, result);
-            return result;
-        }
-
         public static ImperativeAST.DoubleNode ToImperativeNode(this DoubleNode aNode)
         {
             if (aNode == null) return null;
@@ -3451,21 +3438,6 @@ namespace ProtoCore.AST.AssociativeAST
                 ArrayDimensions = aNode.ArrayDimensions.ToImperativeNode(),
                 FormalArguments = aNode.FormalArguments.Select(ToImperativeAST).ToList(),
                 Function = aNode.Function.ToImperativeAST()
-            };
-            CopyProps(aNode, result);
-            return result;
-        }
-
-        public static ImperativeAST.FunctionDefinitionNode ToImperativeNode(this FunctionDefinitionNode aNode)
-        {
-            if (aNode == null) return null;
-
-            var result = new ImperativeAST.FunctionDefinitionNode
-            {
-                Attributes = aNode.Attributes.Select(ToImperativeAST).ToList(),
-                FunctionBody = aNode.FunctionBody.ToImperativeNode(),
-                ReturnType = aNode.ReturnType,
-                Signature = aNode.Signature.ToImperativeNode()
             };
             CopyProps(aNode, result);
             return result;
@@ -3607,19 +3579,6 @@ namespace ProtoCore.AST.AssociativeAST
             {
                 Expression = aNode.Expression.ToImperativeAST(),
                 Operator = aNode.Operator
-            };
-            CopyProps(aNode, result);
-            return result;
-        }
-
-        public static ImperativeAST.VarDeclNode ToImperativeNode(this VarDeclNode aNode)
-        {
-            if (aNode == null) return null;
-
-            var result = new ImperativeAST.VarDeclNode
-            {
-                ArgumentType = aNode.ArgumentType,
-                NameNode = aNode.NameNode.ToImperativeAST()
             };
             CopyProps(aNode, result);
             return result;

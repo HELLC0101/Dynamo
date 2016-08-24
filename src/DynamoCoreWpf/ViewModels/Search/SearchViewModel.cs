@@ -107,7 +107,7 @@ namespace Dynamo.ViewModels
         ///     Visible property
         /// </summary>
         /// <value>
-        ///     Tells whether the View is visible or not
+        ///     Indicates whether the View is visible or not
         /// </value>
         private bool visible;
         public bool Visible
@@ -210,7 +210,7 @@ namespace Dynamo.ViewModels
                 strBuilder.Append(", ");
             }
 
-            InstrumentationLogger.LogPiiInfo("Filter-categories", strBuilder.ToString().Trim());
+            Analytics.LogPiiInfo("Filter-categories", strBuilder.ToString().Trim());
         }
 
         /// <summary>
@@ -786,7 +786,7 @@ namespace Dynamo.ViewModels
             if (Visible != true)
                 return;
 
-            InstrumentationLogger.LogPiiInfo("Search", query);
+            Analytics.LogPiiInfo("Search", query);
 
             // if the search query is empty, go back to the default treeview
             if (string.IsNullOrEmpty(query))

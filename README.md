@@ -14,6 +14,8 @@ Looking to learn or download Dynamo?  Check out [dynamobim.org](http://dynamobim
 If you're interested in developing a Node library for Dynamo, the easiest place to start is by browsing the [DynamoSamples](https://github.com/DynamoDS/DynamoSamples).  
 These samples use the [Dynamo NuGet packages](https://www.nuget.org/packages?q=DynamoVisualProgramming) which can be installed using the NuGet package manager in Visual Studio.
 
+[Documentation of the Dynamo API]( http://dynamods.github.io/DynamoAPI) with a searchable index of public API calls for core functionality. This will be expanded to include regular nodes and Revit functionality.
+
 The [API Changes](https://github.com/DynamoDS/Dynamo/wiki/API-Changes) document explains changes made to the Dynamo API with every version.
 
 You can learn more about developing libraries for Dynamo on the [Dynamo wiki](https://github.com/DynamoDS/Dynamo/wiki/Zero-Touch-Plugin-Development).
@@ -21,10 +23,9 @@ You can learn more about developing libraries for Dynamo on the [Dynamo wiki](ht
 ### Build Dynamo from Source ###
 You will need the following to build Dynamo:
 
-- Microsoft Visual Studio 2013
+- Microsoft Visual Studio 2015
 - [GitHub for Windows](https://windows.github.com/)
-- [Microsoft .NET Framework 3.5 with SP1](http://www.microsoft.com/en-sg/download/details.aspx?id=25150)
-- Microsoft .NET Framework 4.0 and above (included with Visual Studio 2013)
+- Microsoft .NET Framework 4.5.
 - Microsoft DirectX (install from %GitHub%\Dynamo\tools\install\Extra\DirectX\DXSETUP.exe)
 
 Directions for building Dynamo on other platforms (e.g. Linux or OS X) can be found [here](https://github.com/DynamoDS/Dynamo/wiki/Dynamo-on-Linux,-Mac).  
@@ -38,6 +39,67 @@ Dynamo is an open-source project and would be nothing without its community.  Yo
 
 
 ## Releases ##
+
+### 1.1.0 ###
+
+New Functionality : 
+- A whole new bunch of Library added for T-Spline Nodes. You can turn on this option from Settings to view the T-Spline nodes in Library. T-Splines modelling technology is now exposed in Dynamo to enable new organic and freeform geometry creation tools. There are approximately 150 new nodes that are a subset of the existing geometry library. Since this is an advanced functionality that may be useful only in certain non-standard workflows these nodes by default will be hidden in the library and will not interfere in node search results unless explicitly turned on in the Settings -> Experimental menu. The new functionality offers a wide range of capabilities to create and edit T-Spline surfaces and also conversion to and from NURBS and meshes.
+- New notification center provides you with more details on system crashes and errors, such as when DLL incompatibilities between Dynamo and other Revit Addins are detected at startup
+- New Settings menu option to Show or Hide Preview Bubbles
+- We have fixed the long pending issue of Screen Capture, now it doesn't matter how big your graph is, everything will be visible  at whatever zoom level you are at when you use Export Workspace as Image.
+
+Important Bug Fixes: 
+- Element Binding (the ability of Dynamo to track and modify rather than duplicate or replace elements in Revit) had some regressions in Revit 2017.  These are fixed.
+- Freeze does not delete elements created in Revit anymore.
+- Fixed issue related to FamilyInstance.SetRotation, now you can use this node with Run Automatic mode as well and your first instance won't get placed randomly in a different location and crash issues have been addressed
+- Fixed long pending issue with Importing series of Swept Solids, Now while after importing all Surfaces are there. 
+- Localization crash fixes with Norwegian, German and French
+- Dynamo for Revit no longer crashes at startup with non-compliant Views (not 3D)
+- When selecting any labeled item only that item's label gets displayed, no additional labels are displayed
+- Fixed errors on Code Block Nodes and String Nodes that are published to Web and accessed from the Customizer view
+- Read-only nodes and directories can now be loaded in Dynamo.
+- Mapping flatten nodes and flatten on single values no longer replaces data with null values
+- Arc.ByStartPointEndPointStartTangent no longer fails using a normalised vector
+- Direct Shape now recognizes material input properly
+-  /verysilent install of Dynamo for Revit now completes without user interaction
+-  Fixed crash with closed curve as input to Surface.ByLoft
+-  Dot product no longer returning erroneus scalars
+-  Zero radius and related bad geometry errors no longer create crash 
+-  Turning off "Revit Background Preview" no longer turns off "Background Preview" on relaunch of Dynamo.
+ 
+Other Changes: 
+- Now once you add a new path for Package location then all the packages from the new path will get loaded without relaunching Dynamo.
+- We have improved the preview bubble for its Pin and hover over related issues.
+- Updated the compact view of the preview bubble to display information about the number of items in an output list.
+- Quick Access to "Getting Started" from Help menu
+- From this release, we stopped migrating of 0.6.3 and 0.7.0 files. If your old files contain nodes from above two releases then you have to open those files on an earlier version (till 1.0.0) and the save them. 
+
+Known Issues:
+- Installing Dynamo 4 Revit 1.1 Will require a reinstallation of Dynamo Studio with Studio 1.1 (1.0 and 1.1 cannot co-habitate).  This issue will not happen in the future, when Future Dynamo Core installation will work with older versions of Products. 
+- Simplification of some overload methods will result in minor changes in behavior.  Please see this document for specific nodes affected: https://github.com/DynamoDS/Dynamo/wiki/Dynamo-Node-Changes
+
+### 1.0.0 ###
+
+- API Stabilization:  1.0.0 is a commitment to stable code that allows for smoother and more reliable movements from one version to another.  To more clearly express this, we have been moving to “semantic versioning” to illustrate the nature of changes in each release. We will be using the fairly standard version naming with an x.y.z system, where x incrementing represents breaks to the API (requiring developer refactors), y indicates changes that are still backwards compatible, and z are smaller bug fixes.  Package creators and maintainers are encouraged to assess changes to the previous code, which can be found here  
+
+  https://github.com/DynamoDS/Dynamo/wiki/Dynamo-Node-Changes  
+
+  https://github.com/DynamoDS/Dynamo/wiki/API-Changes
+- Graphics performance enhancements:  see this post for details  
+  https://github.com/DynamoDS/Dynamo/pull/6356
+- Documentation: Along with new sections of the DynamoPrimer (http://DynamoPrimer.com), we have started an online documentation of the Dynamo API with a searchable index of public API calls for core functionality. This will be expanded to include regular nodes and Revit functionality.  http://dynamods.github.io/DynamoAPI/
+- Licensing:  Dynamo Studio is now using a new version of the Autodesk installer that allows for easier access to network and token flex licensing tools
+- Install:  we have created a separate installation for "core" Dynamo functionality, those tools used by all implementations of Dynamo, and Revit, and Studio installations.  This allows for the sharing of a common core of Dynamo code and packages.
+- List Management:  Changes to "replication" or automated matching of different data streams in nodes and Code Block nodes eliminates the need for List.Map and List.Combine in many situations
+- Send to Web: formerly known as Share Workspace, we have improved the ability to view and interact with Dynamo online with Customizers
+- File Export:  Users can now author DWG files in the Translation section of Dynamo Studio.
+- Direct Shape:  Dynamo in Revit 2017 can now take advantage of faster and more sophisticated direct shape creation.  In most cases, solid and surface geometry can be sent directly into the Revit environment as smooth (rather than tesselated) surfaces and solids, categorized to whatever is needed.  In the cases where a smooth element cannot be created, a tesselated (mesh) object is created, as was the case previously.
+
+Bug Fixes
+- An extensive list can be found here: http://dynamobim.org/incoming-bug-fixes-for-dynamo-1-0-0
+
+Known Issues
+- Listed here: https://github.com/DynamoDS/Dynamo/wiki/Known-Issues
 
 ### 0.9.1 ###
 

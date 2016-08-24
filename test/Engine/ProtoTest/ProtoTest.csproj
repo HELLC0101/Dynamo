@@ -132,6 +132,7 @@
     <Compile Include="DebugTests\SetValueTests.cs" />
     <Compile Include="DSASM\ExecutionMirrorTests.cs" />
     <Compile Include="DSASM\HeapMarkSweepTests.cs" />
+    <Compile Include="DSASM\MemorySafetyTest.cs" />
     <Compile Include="DSASM\StackOverflowTests.cs" />
     <Compile Include="FFITests\ArgumentMarshalingTests.cs" />
     <Compile Include="FFITests\ContextInjectionTests.cs" />
@@ -148,7 +149,6 @@
     <Compile Include="LiveRunnerTests\MicroFeatureTests.cs" />
     <Compile Include="LiveRunnerTests\PreviewChangeSetTests.cs" />
     <Compile Include="MinimalClassTests.cs" />
-    <Compile Include="ModifierStack.cs" />
     <Compile Include="MultiLangTests\AssociativeToImperative.cs" />
     <Compile Include="MultiLangTests\FunctionPointerTest.cs" />
     <Compile Include="MultiLangTests\GCTest.cs">
@@ -209,10 +209,10 @@
     <Compile Include="UtilsTests\AstFactoryTest.cs" />
     <Compile Include="UtilsTests\AstVisitorTest.cs" />
     <Compile Include="UtilsTests\ClassUtilsTest.cs" />
-    <Compile Include="UtilsTests\CoreDump.cs" />
     <Compile Include="UtilsTests\CoreUtilsTest.cs" />
     <Compile Include="UtilsTests\ImperativeAstVistorTest.cs" />
     <Compile Include="UtilsTests\TextFxTests.cs" />
+    <Compile Include="VariableResolutionTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Engine\ProtoAssociative\ProtoAssociative.csproj">

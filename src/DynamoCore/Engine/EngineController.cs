@@ -1,39 +1,47 @@
-﻿using Autodesk.DesignScript.Interfaces;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
+using Autodesk.DesignScript.Interfaces;
 using Dynamo.Engine.CodeCompletion;
-using Dynamo.Models;
+using Dynamo.Engine.CodeGeneration;
+using Dynamo.Engine.NodeToCode;
+using Dynamo.Graph.Nodes;
 using Dynamo.Logging;
 using Dynamo.Scheduler;
 using ProtoCore.AST.AssociativeAST;
 using ProtoCore.DSASM.Mirror;
 using ProtoCore.Mirror;
+using ProtoCore.Utils;
 using ProtoScript.Runners;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-
 using BuildWarning = ProtoCore.BuildData.WarningEntry;
 using Constants = ProtoCore.DSASM.Constants;
 using RuntimeWarning = ProtoCore.Runtime.WarningEntry;
-using ProtoCore.Utils;
-using Dynamo.Engine.NodeToCode;
-using Dynamo.Engine.CodeGeneration;
-using Dynamo.Graph;
-using Dynamo.Graph.Nodes;
 
 namespace Dynamo.Engine
 {
+    /// <summary>
+    /// This is a delegate used in AstBuilt event.   
+    /// </summary>
+    /// <param name="sender">EngineController</param>
+    /// <param name="e">CompiledEventArgs (include node GUID and list of AST nodes)</param>
     public delegate void AstBuiltEventHandler(object sender, CompiledEventArgs e);
 
     /// <summary>
     /// A controller to coordinate the interactions between some DesignScript
-    /// sub components like library managment, live runner and so on.
+    /// sub components like library management, live runner and so on.
     /// </summary>
     public class EngineController : LogSourceBase, IAstNodeContainer, IDisposable
     {
+        /// <summary>
+        /// This event is fired when a node has been compiled.
+        /// </summary>
         public event AstBuiltEventHandler AstBuilt;
 
-        public event Action<TraceReconciliationEventArgs> TraceReconcliationComplete;
+        /// <summary>
+        /// This event is fired when <see cref="UpdateGraphAsyncTask"/> is completed.
+        /// </summary>
+        internal event Action<TraceReconciliationEventArgs> TraceReconcliationComplete;
         private void OnTraceReconciliationComplete(TraceReconciliationEventArgs e)
         {
             if (TraceReconcliationComplete != null)
@@ -49,14 +57,21 @@ namespace Dynamo.Engine
         private SyncDataManager syncDataManager;
         private readonly Queue<GraphSyncData> graphSyncDataQueue = new Queue<GraphSyncData>();
         private readonly Queue<List<Guid>> previewGraphQueue = new Queue<List<Guid>>();
+
+        /// <summary>
+        /// Bool value indicates if every action should be logged. Used in debug mode.
+        /// </summary>
         public bool VerboseLogging;
 
         private readonly Object macroMutex = new Object();
 
+        /// <summary>
+        /// Reference to Compilation service. This compiles Input / Output node.
+        /// </summary>
         public static CompilationServices CompilationServices;
 
         /// <summary>
-        /// Get DesignScript core.
+        /// Returns DesignScript core.
         /// </summary>
         public ProtoCore.Core LiveRunnerCore
         {
@@ -67,7 +82,7 @@ namespace Dynamo.Engine
         }
 
         /// <summary>
-        /// Get DesignScript runtime core.
+        /// Returns DesignScript runtime core.
         /// </summary>
         public ProtoCore.RuntimeCore LiveRunnerRuntimeCore
         {
@@ -79,7 +94,7 @@ namespace Dynamo.Engine
 
 
         /// <summary>
-        /// Return libary service instance.
+        /// Returns library service instance.
         /// </summary>
         public LibraryServices LibraryServices
         {
@@ -98,6 +113,12 @@ namespace Dynamo.Engine
         /// </summary>
         public bool IsDisposed { get; private set; }
 
+        /// <summary>
+        /// This function creates EngineController
+        /// </summary>
+        /// <param name="libraryServices"> LibraryServices manages builtin libraries and imported libraries.</param>
+        /// <param name="geometryFactoryFileName">Path to LibG</param>
+        /// <param name="verboseLogging">Bool value, if set to true, enables verbose logging</param>
         public EngineController(LibraryServices libraryServices, string geometryFactoryFileName, bool verboseLogging)
         {
             this.libraryServices = libraryServices;
@@ -117,6 +138,9 @@ namespace Dynamo.Engine
             VerboseLogging = verboseLogging;
         }
 
+        /// <summary>
+        /// Disposes EngineController.
+        /// </summary>
         public void Dispose()
         {
             // This flag must be set immediately
@@ -130,15 +154,6 @@ namespace Dynamo.Engine
 
         #region Function Groups
 
-        /// <summary>
-        /// Return all function groups.
-        /// </summary>
-        internal IEnumerable<FunctionGroup> GetFunctionGroups()
-        {
-            return libraryServices.GetAllFunctionGroups();
-        }
-
-        /// <summary>
         /// Import library.
         /// </summary>
         /// <param name="library"></param>
@@ -152,10 +167,10 @@ namespace Dynamo.Engine
         #region Value queries
 
         /// <summary>
-        /// Get runtime mirror for variable.
+        /// Returns runtime mirror for variable.
         /// </summary>
-        /// <param name="variableName"></param>
-        /// <returns></returns>
+        /// <param name="variableName">Unique ID of AST node</param>
+        /// <returns>RuntimeMirror object that reflects status of a single designscript variable</returns>
         public RuntimeMirror GetMirror(string variableName)
         {
             lock (macroMutex)
@@ -171,7 +186,7 @@ namespace Dynamo.Engine
                 }
                 catch (Exception ex)
                 {
-                    Log(string.Format(Properties.Resources.FailedToGetMirrorVariable,variableName,
+                    Log(string.Format(Properties.Resources.FailedToGetMirrorVariable, variableName,
                         ex.Message));
                 }
 
@@ -179,42 +194,7 @@ namespace Dynamo.Engine
             }
         }
 
-        /// <summary>
-        /// Get a list of IGraphicItem of variable if it is a geometry object;
-        /// otherwise returns null.
-        /// </summary>
-        /// <param name="variableName"></param>
-        /// <returns></returns>
-        internal List<IGraphicItem> GetGraphicItems(string variableName)
-        {
-            lock (macroMutex)
-            {
-                RuntimeMirror mirror = GetMirror(variableName);
-                return null == mirror ? null : mirror.GetData().GetGraphicsItems();
-            }
-        }
-
         #endregion
-
-        /// <summary>
-        /// Generate graph sync data based on the input Dynamo nodes. Return 
-        /// false if all nodes are clean.
-        /// </summary>
-        /// <param name="nodes"></param>
-        /// <param name="verboseLogging"></param>
-        /// <returns></returns>
-        internal bool GenerateGraphSyncData(ICollection<NodeModel> nodes, bool verboseLogging)
-        {
-            lock (macroMutex)
-            {
-                var activeNodes = nodes.Where(n => !n.IsInErrorState);
-
-                if (activeNodes.Any())
-                    astBuilder.CompileToAstNodes(activeNodes, CompilationContext.DeltaExecution, verboseLogging);
-
-                return VerifyGraphSyncData(nodes);
-            }
-        }
 
         /// <summary>
         /// This method is called on the main thread from UpdateGraphAsyncTask
@@ -270,17 +250,16 @@ namespace Dynamo.Engine
             List<Guid> previewGraphData = this.liveRunnerServices.PreviewGraph(graphSyncdata, verboseLogging);
             syncDataManager = tempSyncDataManager;
 
-             lock (previewGraphQueue)
-             {
-                 previewGraphQueue.Enqueue(previewGraphData);
-             }
-            
+            lock (previewGraphQueue)
+            {
+                previewGraphQueue.Enqueue(previewGraphData);
+            }
+
             return previewGraphQueue.Dequeue();
         }
 
         /// <summary>
-        /// Return true if there are graph sync data in the queue waiting for
-        /// being executed.
+        /// Returns true if there are graph sync data in the queue waiting to be executed.
         /// </summary>
         /// <returns></returns>
         public bool HasPendingGraphSyncData
@@ -302,7 +281,7 @@ namespace Dynamo.Engine
 
         /// <summary>
         /// Generate graph sync data based on the input Dynamo custom node information.
-        /// Return false if all nodes are clean.
+        /// Returns false if all nodes are clean.
         /// </summary>
         /// <param name="nodes"></param>
         /// <param name="definition"></param>
@@ -448,63 +427,6 @@ namespace Dynamo.Engine
             liveRunnerServices.RemoveRecordedAstGuidsForSession(sessionID);
         }
 
-        /// <summary>
-        /// Update graph with graph sync data.
-        /// </summary>
-        /// <param name="nodes"></param>
-        /// <param name="fatalException">The exception that is not handled 
-        /// anywhere within the LiveRunnerServices.UpdateGraph method. This 
-        /// parameter will always be set to null if there is no unhandled 
-        /// exception thrown from within the UpdateGraph call.</param>
-        /// <returns>Returns true if any update has taken place, or false 
-        /// otherwise.</returns>
-        internal bool UpdateGraph(ICollection<NodeModel> nodes, out Exception fatalException)
-        {
-            lock (macroMutex)
-            {
-
-                bool updated = false;
-                fatalException = null;
-
-                ClearWarnings(nodes);
-
-                lock (graphSyncDataQueue)
-                {
-                    while (graphSyncDataQueue.Count > 0)
-                    {
-                        try
-                        {
-                            var data = graphSyncDataQueue.Dequeue();
-                            liveRunnerServices.UpdateGraph(data, VerboseLogging);
-                            updated = true;
-                        }
-                        catch (Exception e)
-                        {
-                            // The exception that is not handled within the UpdateGraph
-                            // method is recorded here. The only thing for now is, we 
-                            // are only interested in the first unhandled exception.
-                            // This decision may change in the future if we decided to 
-                            // clear up "graphSyncDataQueue" whenever there is a fatal 
-                            // exception?
-                            // 
-                            if (fatalException == null)
-                                fatalException = e;
-
-                            Log("Update graph failed: " + e.Message);
-                        }
-                    }
-                }
-
-                if (updated)
-                {
-                    ShowBuildWarnings(nodes);
-                    ShowRuntimeWarnings(nodes);
-                }
-
-                return updated;
-            }
-        }
-
         internal void ReconcileTraceDataAndNotify()
         {
             if (this.IsDisposed)
@@ -529,48 +451,6 @@ namespace Dynamo.Engine
             OnTraceReconciliationComplete(new TraceReconciliationEventArgs(callsiteToOrphanMap));
         }
 
-        private static void ClearWarnings(IEnumerable<NodeModel> nodes)
-        {
-            var warningNodes = nodes.Where(n => n.State == ElementState.Warning);
-
-            foreach (var node in warningNodes)
-            {
-                node.ClearRuntimeError();
-            }
-        }
-
-        private void ShowRuntimeWarnings(IEnumerable<NodeModel> nodes)
-        {
-            // Clear all previous warnings
-            var warnings = liveRunnerServices.GetRuntimeWarnings();
-            foreach (var item in warnings)
-            {
-                Guid guid = item.Key;
-                var node = nodes.FirstOrDefault(n => n.GUID == guid);
-                if (node != null)
-                {
-                    string warningMessage = string.Join("\n", item.Value.Select(w => w.Message));
-                    node.Warning(warningMessage);
-                }
-            }
-        }
-
-        private void ShowBuildWarnings(IEnumerable<NodeModel> nodes)
-        {
-            // Clear all previous warnings
-            var warnings = liveRunnerServices.GetBuildWarnings();
-            foreach (var item in warnings)
-            {
-                Guid guid = item.Key;
-                var node = nodes.FirstOrDefault(n => n.GUID == guid);
-                if (node != null)
-                {
-                    string warningMessage = string.Join("\n", item.Value.Select(w => w.Message));
-                    node.Warning(warningMessage);
-                }
-            }
-        }
-
         /// <summary>
         ///     LibraryLoaded event handler.
         /// </summary>
@@ -586,11 +466,20 @@ namespace Dynamo.Engine
 
         #region Implement IAstNodeContainer interface
 
+        /// <summary>
+        /// This class represents the intermediate state (Compiling state), when a nodemodel is compiled to AST nodes.
+        /// </summary>
+        /// <param name="nodeGuid">Node unique ID</param>
         public void OnCompiling(Guid nodeGuid)
         {
             syncDataManager.MarkForAdding(nodeGuid);
         }
 
+        /// <summary>
+        /// This class represents a state after a nodemodel is compiled to AST nodes.
+        /// </summary>
+        /// <param name="nodeGuid">Node unique ID</param>
+        /// <param name="astNodes">Resulting AST nodes</param>
         public void OnCompiled(Guid nodeGuid, IEnumerable<AssociativeNode> astNodes)
         {
             var associativeNodes = astNodes as IList<AssociativeNode> ?? astNodes.ToList();
@@ -624,11 +513,11 @@ namespace Dynamo.Engine
             node.GetDownstreamNodes(node, gathered);
             foreach (var iNode in gathered)
             {
-                syncDataManager.DeleteNodes(iNode.GUID);               
+                syncDataManager.DeleteNodes(iNode.GUID);
             }
         }
 
-        
+
 
         #region Node2Code
 
@@ -637,43 +526,43 @@ namespace Dynamo.Engine
             return NodeToCodeCompiler.NodeToCode(libraryServices.LibraryManagementCore, graph, nodes, namingProvider);
         }
 
-        private bool HasVariableDefined(string var)
-        {
-            var cbs = libraryServices.LibraryManagementCore.CodeBlockList;
-            if (cbs == null || cbs.Count > 0)
-            {
-                return false;
-            }
-
-            var idx = cbs[0].symbolTable.IndexOf(var, Constants.kGlobalScope, Constants.kGlobalScope);
-            return idx == Constants.kInvalidIndex;
-        }
-
         #endregion
-
     }
 
+    /// <summary>
+    /// This class is used to precompile code block node.
+    /// Also it's used as helper for resolving code in Input and Output nodes.
+    /// </summary>
     public class CompilationServices
     {
-        private  ProtoCore.Core compilationCore;
+        private ProtoCore.Core compilationCore;
 
+        /// <summary>
+        /// Creates CompilationServices.
+        /// </summary>
+        /// <param name="core">Copilation core</param>
         public CompilationServices(ProtoCore.Core core)
         {
             compilationCore = core;
         }
 
+        /// <summary>
+        /// Pre-compiles Design script code in code block node.
+        /// </summary>
+        /// <param name="parseParams">Container for compilation related parameters</param>
+        /// <returns>true if code compilation succeeds, false otherwise</returns>
         public bool PreCompileCodeBlock(ref ParseParam parseParams)
         {
             return CompilerUtils.PreCompileCodeBlock(compilationCore, ref parseParams);
         }
     }
 
-    public class TraceReconciliationEventArgs : EventArgs
+    internal class TraceReconciliationEventArgs : EventArgs
     {
         /// <summary>
         /// A list of ISerializable items.
         /// </summary>
-        public Dictionary<Guid,List<ISerializable>> CallsiteToOrphanMap { get; private set; }
+        public Dictionary<Guid, List<ISerializable>> CallsiteToOrphanMap { get; private set; }
 
         public TraceReconciliationEventArgs(Dictionary<Guid, List<ISerializable>> callsiteToOrphanMap)
         {
