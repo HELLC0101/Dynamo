@@ -190,7 +190,7 @@ namespace Dynamo.Graph.Workspaces
         }
 
         /// <summary>
-        ///     Search category for this workspace, if it is a Custom Node.
+        /// Search category for this workspace.
         /// </summary>
         public string Category
         {
@@ -203,21 +203,6 @@ namespace Dynamo.Graph.Workspaces
         }
 
         private string category;
-
-        /// <summary>
-        ///     A description of the workspace
-        /// </summary>
-        public string Description
-        {
-            get { return description; }
-            set
-            {
-                description = value;
-                RaisePropertyChanged("Description");
-            }
-        }
-
-        private string description;
 
         /// <summary>
         ///     Custom node visibility in the Dynamo library

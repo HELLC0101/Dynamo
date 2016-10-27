@@ -404,7 +404,7 @@ namespace Dynamo.Graph.Workspaces
         }
 
         /// <summary>
-        ///     A description of the workspace
+        /// A description of the workspace.
         /// </summary>
         public string Description
         {
