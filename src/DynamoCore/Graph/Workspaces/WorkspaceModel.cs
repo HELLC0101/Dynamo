@@ -458,6 +458,9 @@ namespace Dynamo.Graph.Workspaces
             }
         }
 
+        /// <summary>
+        /// A collection of <see cref="NodeModel"/> objects which are currently selected.
+        /// </summary>
         public IEnumerable<NodeModel> CurrentSelection
         {
             get
