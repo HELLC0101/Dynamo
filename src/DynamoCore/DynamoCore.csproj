@@ -118,6 +118,7 @@ limitations under the License.
     <Compile Include="Core\DynamoMigrator.cs" />
     <Compile Include="Exceptions\LibraryLoadFailedException.cs" />
     <Compile Include="Graph\Workspaces\Layout.cs" />
+    <Compile Include="Graph\Workspaces\Presets.cs" />
     <Compile Include="Logging\Analytics.cs" />
     <Compile Include="Logging\DynamoAnalyticsClient.cs" />
     <Compile Include="Logging\IAnalyticsClient.cs" />

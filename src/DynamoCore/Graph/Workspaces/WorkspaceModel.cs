@@ -84,7 +84,6 @@ namespace Dynamo.Graph.Workspaces
         private readonly List<NodeModel> nodes;
         private readonly List<NoteModel> notes;
         private readonly List<AnnotationModel> annotations;
-        private readonly List<PresetModel> presets;
         private readonly UndoRedoRecorder undoRecorder;
         private double scaleFactor;
         private bool hasNodeInSyncWithDefinition;
@@ -371,11 +370,6 @@ namespace Dynamo.Graph.Workspaces
         /// </summary>
         //TODO(Steve): This should only live on DynamoModel, not here. It's currently used to instantiate NodeModels during UndoRedo. -- MAGN-5713
         public readonly NodeFactory NodeFactory;
-
-        /// <summary>
-        ///     A set of input parameter states, this can be used to set the graph to a serialized state.
-        /// </summary>
-        public IEnumerable<PresetModel> Presets { get { return presets;} }
 
         /// <summary>
         ///     The date of the last save.
@@ -1236,102 +1230,6 @@ namespace Dynamo.Graph.Workspaces
         internal void IncrementPasteOffset()
         {
             this.currentPasteOffset = (this.currentPasteOffset + PasteOffsetStep) % PasteOffsetMax;
-        }
-
-        #endregion
-
-        #region Presets
-
-        /// <summary>
-        ///  this method creates a new preset state from a set of NodeModels and adds this new state to this presets collection
-        /// </summary>
-        /// <param name="name">the name of preset state</param>
-        /// <param name="description">a description of what the state does</param>
-        /// <param name="currentSelection">a set of NodeModels that are to be serialized in this state</param>
-        private PresetModel AddPresetCore(string name, string description, IEnumerable<NodeModel> currentSelection)
-        {
-            if (currentSelection == null || currentSelection.Count() < 1)
-            {
-                throw new ArgumentException("currentSelection is empty or null");
-            }
-            var inputs = currentSelection;
-
-            var newstate = new PresetModel(name, description, inputs);
-            if (Presets.Any(x => x.GUID == newstate.GUID))
-            {
-                throw new ArgumentException("duplicate id in collection");
-            }
-
-            presets.Add(newstate);
-            return newstate;
-        }
-
-        /// <summary>
-        /// Removes a specified <see cref="PresetModel"/> object from the preset collection of the workspace.
-        /// </summary>
-        /// <param name="state"><see cref="PresetModel"/> object to remove.</param>
-        public void RemovePreset(PresetModel state)
-        {
-            if (Presets.Contains(state))
-            {
-                presets.Remove(state);
-            }
-        }
-
-        internal void ApplyPreset(PresetModel state)
-        {
-            if (state == null)
-            {
-                Log("Attempted to apply a PresetState that was null");
-                return;
-            }
-            //start an undoBeginGroup
-            using (var undoGroup = this.undoRecorder.BeginActionGroup())
-            {
-               //reload each node, and record each each modification in the undogroup
-                foreach (var node in state.Nodes)
-                {
-                    //check that node still exists in this workspace,
-                    //otherwise bail on this node, check by GUID instead of nodemodel
-                    if (nodes.Select(x=>x.GUID).Contains(node.GUID))
-                    {
-                        var originalpos = node.Position;
-                        var serializedNode = state.SerializedNodes.ToList().Find(x => Guid.Parse(x.GetAttribute("guid")) == node.GUID);
-                        //overwrite the xy coords of the serialized node with the current position, so the node is not moved
-                        serializedNode.SetAttribute("x", originalpos.X.ToString(CultureInfo.InvariantCulture));
-                        serializedNode.SetAttribute("y", originalpos.Y.ToString(CultureInfo.InvariantCulture));
-                        serializedNode.SetAttribute("isPinned", node.PreviewPinned.ToString());
-
-                        this.undoRecorder.RecordModificationForUndo(node);
-                        this.ReloadModel(serializedNode);
-                    }
-                }
-                //select all the modified nodes in the UI
-                DynamoSelection.Instance.ClearSelection();
-                foreach(var node in state.Nodes)
-                {
-                    DynamoSelection.Instance.Selection.Add(node);
-                }
-            }
-        }
-
-        internal PresetModel AddPreset(string name, string description, IEnumerable<Guid> IDSToSave)
-        {
-                //lookup the nodes by their ID, can also check that we find all of them....
-                var nodesFromIDs = this.Nodes.Where(node => IDSToSave.Contains(node.GUID));
-                //access the presetsCollection and add a new state based on the current selection
-                var newpreset = this.AddPresetCore(name, description, nodesFromIDs);
-                HasUnsavedChanges = true;
-                return newpreset;
-        }
-
-        /// <summary>
-        /// Adds a specified collection <see cref="PresetModel"/> objects to the preset collection of the workspace.
-        /// </summary>
-        /// <param name="presetCollection"><see cref="PresetModel"/> objects to add.</param>
-        public void ImportPresets(IEnumerable<PresetModel> presetCollection)
-        {
-            presets.AddRange(presetCollection);
         }
 
         #endregion
