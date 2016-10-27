@@ -2,6 +2,7 @@
 using Dynamo.Engine;
 using Dynamo.Graph.Annotations;
 using Dynamo.Graph.Nodes;
+using Dynamo.Graph.Nodes.CustomNodes;
 using Dynamo.Graph.Nodes.NodeLoaders;
 using Dynamo.Graph.Notes;
 using Dynamo.Graph.Presets;
@@ -12,7 +13,9 @@ using ProtoCore;
 using ProtoCore.Namespace;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml;
@@ -22,7 +25,7 @@ namespace Dynamo.Graph.Workspaces
     /// <summary>
     ///     This class contains methods and properties that defines a <see cref="WorkspaceModel"/>.
     /// </summary>
-    public class HomeWorkspaceModel : WorkspaceModel
+    public class HomeWorkspaceModel : WorkspaceModel, ICustomNodeWorkspaceModel
     {
         #region Class Data Members and Properties
 
@@ -114,6 +117,35 @@ namespace Dynamo.Graph.Workspaces
             }
         }
 
+        private string category;
+
+        /// <summary>
+        /// Search category for this workspace.
+        /// </summary>
+        public string Category
+        {
+            get { return category; }
+            set
+            {
+                category = value;
+                RaisePropertyChanged("Category");
+            }
+        }
+
+        private bool isVisibleInDynamoLibrary;
+
+        /// <summary>
+        ///     Custom node visibility in the Dynamo library
+        /// </summary>
+        public bool IsVisibleInDynamoLibrary
+        {
+            get { return isVisibleInDynamoLibrary; }
+            set
+            {
+                isVisibleInDynamoLibrary = value;
+            }
+        }
+
         /// <summary>
         /// Notifies listeners that graph evaluation is started.
         /// </summary>
@@ -173,6 +205,66 @@ namespace Dynamo.Graph.Workspaces
             if (handler != null) handler(this, e);
         }
 
+        private Guid customNodeId;
+
+        /// <summary>
+        /// Returns identifier of the custom node
+        /// </summary>
+        public Guid CustomNodeId
+        {
+            get { return customNodeId; }
+            private set
+            {
+                if (value == customNodeId)
+                    return;
+
+                var oldId = customNodeId;
+                customNodeId = value;
+                OnFunctionIdChanged(oldId);
+                OnDefinitionUpdated();
+                OnInfoChanged();
+                RaisePropertyChanged("CustomNodeId");
+            }
+        }
+
+        /// <summary>
+        /// Notifies all custom node instances that definition has changed
+        /// </summary>
+        public event Action DefinitionUpdated;
+        internal virtual void OnDefinitionUpdated()
+        {
+            if (SilenceDefinitionUpdated) return;
+
+            var handler = DefinitionUpdated;
+            if (handler != null) handler();
+        }
+
+        /// <summary>
+        /// Notifies listeners that custom node identifier has changed
+        /// </summary>
+        public event Action<Guid> FunctionIdChanged;
+        protected virtual void OnFunctionIdChanged(Guid oldId)
+        {
+            var handler = FunctionIdChanged;
+            if (handler != null) handler(oldId);
+        }
+
+        /// <summary>
+        /// Disable the DefinitionUpdated event. This might be desirable to lump a large number of 
+        /// workspace changes into a single event.
+        /// </summary>
+        internal bool SilenceDefinitionUpdated { get; set; }
+
+        /// <summary>
+        /// Notifies listeners that custom node workspace has changed
+        /// </summary>
+        public event Action InfoChanged;
+        protected virtual void OnInfoChanged()
+        {
+            Action handler = InfoChanged;
+            if (handler != null) handler();
+        }
+
         #endregion
 
         #region Constructors
@@ -200,8 +292,25 @@ namespace Dynamo.Graph.Workspaces
                 new ElementResolver(),
                 new WorkspaceInfo() { FileName = fileName, Name = "Home" },
                 verboseLogging,
-                isTestMode) { }
+                isTestMode)
+        { }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="guid"></param>
+        /// <param name="engine"></param>
+        /// <param name="scheduler"></param>
+        /// <param name="factory"></param>
+        /// <param name="traceData"></param>
+        /// <param name="nodes"></param>
+        /// <param name="notes"></param>
+        /// <param name="annotations"></param>
+        /// <param name="presets"></param>
+        /// <param name="resolver"></param>
+        /// <param name="info"></param>
+        /// <param name="verboseLogging"></param>
+        /// <param name="isTestMode"></param>
         public HomeWorkspaceModel(Guid guid, EngineController engine,
             DynamoScheduler scheduler,
             NodeFactory factory,
@@ -215,7 +324,14 @@ namespace Dynamo.Graph.Workspaces
             bool verboseLogging,
             bool isTestMode):this(engine, scheduler, factory, traceData, nodes, notes, 
                 annotations, presets, resolver, info, verboseLogging, isTestMode)
-        { Guid = guid; }
+        {
+            Guid = guid;
+            CustomNodeId = Guid.Parse(info.ID);
+            Category = info.Category;
+            Description = info.Description;
+            IsVisibleInDynamoLibrary = info.IsVisibleInDynamoLibrary;
+            PropertyChanged += OnPropertyChanged;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HomeWorkspaceModel"/> class
@@ -243,11 +359,11 @@ namespace Dynamo.Graph.Workspaces
             IEnumerable<NoteModel> notes, 
             IEnumerable<AnnotationModel> annotations,
             IEnumerable<PresetModel> presets,
-            ElementResolver resolver,
+            ElementResolver elementResolver,
             WorkspaceInfo info, 
             bool verboseLogging,
             bool isTestMode)
-            : base(nodes, notes,annotations, info, factory,presets, resolver)
+            : base(nodes, notes,annotations, info, factory,presets, elementResolver)
         {
             EvaluationCount = 0;
 
@@ -282,6 +398,12 @@ namespace Dynamo.Graph.Workspaces
                 copiedData.Add(new KeyValuePair<Guid, List<CallSite.RawTraceData>>(kvp.Key, callSiteTraceData));
             }
             historicalTraceData = copiedData;
+
+            CustomNodeId = Guid.Parse(info.ID);
+            Category = info.Category;
+            Description = info.Description;
+            IsVisibleInDynamoLibrary = info.IsVisibleInDynamoLibrary;
+            PropertyChanged += OnPropertyChanged;
         }
 
         #endregion
@@ -327,6 +449,10 @@ namespace Dynamo.Graph.Workspaces
         {
             base.RequestRun();
 
+            //From CustomNodeWorkspaceModel:
+            HasUnsavedChanges = true;
+            OnDefinitionUpdated();
+
             if (RunSettings.RunType != RunType.Manual)
             {
                 Run();
@@ -340,7 +466,6 @@ namespace Dynamo.Graph.Workspaces
         protected override void NodeModified(NodeModel node)
         {
             base.NodeModified(node);
-
             if (!silenceNodeModifications)
             {
                 RequestRun();
@@ -452,6 +577,12 @@ namespace Dynamo.Graph.Workspaces
             root.SetAttribute("RunPeriod", RunSettings.RunPeriod.ToString(CultureInfo.InvariantCulture));
             root.SetAttribute("HasRunWithoutCrash", HasRunWithoutCrash.ToString(CultureInfo.InvariantCulture));
 
+            //From CustomNodeWorkspaceModel
+            var guid = CustomNodeDefinition != null ? CustomNodeDefinition.FunctionId : Guid.NewGuid();
+            root.SetAttribute("ID", guid.ToString());
+            root.SetAttribute("Description", Description);
+            root.SetAttribute("Category", Category);
+
             return true;
         }
 
@@ -460,7 +591,6 @@ namespace Dynamo.Graph.Workspaces
             var nodesToUpdate = Nodes.Where(n => n.CanUpdatePeriodically);
             MarkNodesAsModifiedAndRequestRun(nodesToUpdate, true);
         }
-
 
         #region evaluation
 
@@ -741,6 +871,136 @@ namespace Dynamo.Graph.Workspaces
             historicalTraceData = null;
 
             return orphans;
-        } 
+        }
+
+        /// <summary>
+        ///     All CustomNodeDefinitions which this Custom Node depends on.
+        /// </summary>
+        public IEnumerable<CustomNodeDefinition> CustomNodeDependencies
+        {
+            get
+            {
+                return Nodes
+                    .OfType<Function>()
+                    .Select(node => node.Definition)
+                    .Where(def => def.FunctionId != CustomNodeId)
+                    .Distinct();
+            }
+        }
+
+        /// <summary>
+        ///     The definition of this custom node, based on the current state of this workspace.
+        /// </summary>
+        public CustomNodeDefinition CustomNodeDefinition
+        {
+            get
+            {
+                return new CustomNodeDefinition(CustomNodeId, Name, Nodes);
+            }
+        }
+
+        /// <summary>
+        ///     The information about this custom node, based on the current state of this workspace.
+        /// </summary>
+        public CustomNodeInfo CustomNodeInfo
+        {
+            get
+            {
+                return new CustomNodeInfo(CustomNodeId, Name, Category, Description, FileName, IsVisibleInDynamoLibrary);
+            }
+        }
+
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs args)
+        {
+            if (args.PropertyName == "Name")
+                OnInfoChanged();
+
+            if (args.PropertyName == "Category" || args.PropertyName == "Description")
+            {
+                HasUnsavedChanges = true;
+                OnInfoChanged();
+            }
+        }
+
+        /// <summary>
+        /// Updates custom node information by given data
+        /// </summary>
+        /// <param name="newName">New name of the workspace. 
+        /// The name will not change if the parameter is omitted.</param>
+        /// <param name="newCategory">New category of the workspace. 
+        /// The category will not change if the parameter is omitted.</param>
+        /// <param name="newDescription">New description of the workspace. 
+        /// The description will not change if the parameter is omitted.</param>
+        /// <param name="newFilename">New file name of the workspace. 
+        /// The file name will not change if the parameter is omitted.</param>
+        public void SetInfo(string newName = null, string newCategory = null, string newDescription = null, string newFilename = null)
+        {
+            PropertyChanged -= OnPropertyChanged;
+
+            Name = newName ?? Name;
+            Category = newCategory ?? Category;
+            Description = newDescription ?? Description;
+            FileName = newFilename ?? FileName;
+
+            PropertyChanged += OnPropertyChanged;
+
+            if (newName != null || newCategory != null || newDescription != null || newFilename != null)
+                OnInfoChanged();
+        }
+
+        /// <summary>
+        /// Saves custom node workspace to a file
+        /// </summary>
+        /// <param name="newPath">New location to save the workspace.</param>
+        /// <param name="runtimeCore">The <see cref="ProtoCore.RuntimeCore"/> object 
+        /// to obtain serialized trace data for node list to save.</param>
+        /// <param name="isBackup">Indicates whether saved workspace is backup or not. If it's not backup,
+        /// we should add it to recent files. Otherwise leave it.</param>
+        /// <returns></returns>
+        public override bool SaveAs(string newPath, ProtoCore.RuntimeCore runtimeCore, bool isBackUp = false)
+        {
+            if (isBackUp)
+                return base.SaveAs(newPath, runtimeCore, isBackUp);
+
+            var originalPath = FileName;
+
+            // A SaveAs to an existing function id prompts the creation of a new 
+            // custom node with a new function id
+            if (originalPath != newPath)
+            {
+                FileName = newPath;
+                // If it is a newly created node, no need to generate a new guid
+                if (!string.IsNullOrEmpty(originalPath))
+                    CustomNodeId = Guid.NewGuid();
+
+                // This comes after updating the Id, as if to associate the new name
+                // with the new Id.
+                SetInfo(Path.GetFileNameWithoutExtension(newPath));
+            }
+
+            return base.SaveAs(newPath, runtimeCore, isBackUp);
+        }
+
+        // This is being used to remove mismatching related to shared custom nodes
+        // described here http://adsk-oss.myjetbrains.com/youtrack/issue/MAGN-9333
+        /// <summary>
+        ///     Gets appropriate name of workspace for sharing.
+        /// </summary>
+        /// <returns>The name of workspace for sharing</returns>
+        public override string GetSharedName()
+        {
+            string result;
+
+            try
+            {
+                string[] splited = this.FileName.Split(new string[] { @"\" }, StringSplitOptions.None);
+                result = splited[splited.Length - 1].Replace(".dyf", "");
+            }
+            catch
+            {
+                result = this.Name;
+            }
+            return result;
+        }
     }
 }

@@ -6,8 +6,6 @@ using System.Linq;
 using System.Reflection;
 
 using Dynamo.Core;
-using Dynamo.Engine;
-using Dynamo.Graph;
 using Dynamo.Graph.Nodes.CustomNodes;
 using Dynamo.Graph.Workspaces;
 using Dynamo.Interfaces;
@@ -361,7 +359,7 @@ namespace Dynamo.PackageManager
             var guids = new HashSet<Guid>(LoadedCustomNodes.Select(x => x.FunctionId));
 
             return
-                dynamoModel.Workspaces.OfType<CustomNodeWorkspaceModel>()
+                dynamoModel.Workspaces.OfType<HomeWorkspaceModel>()
                     .Select(x => x.CustomNodeId)
                     .Any(guids.Contains);
         }

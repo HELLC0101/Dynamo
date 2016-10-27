@@ -239,20 +239,11 @@ namespace Autodesk.Workspaces
 
             var info = new WorkspaceInfo(guid.ToString(), name, description, Dynamo.Models.RunType.Automatic);
 
-            WorkspaceModel ws;
-            if (isCustomNode)
-            {
-                ws = new CustomNodeWorkspaceModel(factory, nodes, notes, annotations, 
-                    Enumerable.Empty<PresetModel>(), elementResolver, info);
-            }
-            else
-            {
-                ws = new HomeWorkspaceModel(guid, engine, scheduler, factory, 
-                    Enumerable.Empty<KeyValuePair<Guid, List<CallSite.RawTraceData>>>(), nodes, notes, annotations, 
-                    Enumerable.Empty<PresetModel>(), elementResolver, 
-                    info, verboseLogging, isTestMode);
-            }
-
+            var ws = new HomeWorkspaceModel(guid, engine, scheduler, factory, 
+                Enumerable.Empty<KeyValuePair<Guid, List<CallSite.RawTraceData>>>(), nodes, notes, annotations, 
+                Enumerable.Empty<PresetModel>(), elementResolver, 
+                info, verboseLogging, isTestMode);
+            
             return ws;
         }
 
@@ -264,13 +255,8 @@ namespace Autodesk.Workspaces
 
             writer.WritePropertyName("Uuid");
             writer.WriteValue(ws.Guid.ToString());
-            writer.WritePropertyName("IsCustomNode");
-            writer.WriteValue(value is CustomNodeWorkspaceModel ? true : false);
-            if(value is CustomNodeWorkspaceModel)
-            {
-                writer.WritePropertyName("Category");
-                writer.WriteValue(((CustomNodeWorkspaceModel)value).Category);
-            }
+            writer.WritePropertyName("Category");
+            writer.WriteValue(((HomeWorkspaceModel)ws).Category);
             writer.WritePropertyName("LastModified");
             writer.WriteValue(ws.LastSaved.ToString("yyyy-MM-dd"));
             writer.WritePropertyName("LastModifiedBy");

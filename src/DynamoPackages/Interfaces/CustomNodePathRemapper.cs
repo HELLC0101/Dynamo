@@ -48,7 +48,7 @@ namespace Dynamo.PackageManager
             var newPath = Path.Combine(newDirectoryPath, Path.GetFileName(def.FileName));
 
             // TODO: http://adsk-oss.myjetbrains.com/youtrack/issue/MAGN-7989
-            var cdef = def as CustomNodeWorkspaceModel;
+            var cdef = def as HomeWorkspaceModel;
             cdef.FileName = newPath;
 
             return true;

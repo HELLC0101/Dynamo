@@ -1,4 +1,5 @@
-﻿using Dynamo.Graph;
+﻿using Dynamo.Engine;
+using Dynamo.Graph;
 using Dynamo.Graph.Annotations;
 using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
@@ -13,6 +14,7 @@ using Dynamo.Logging;
 using Dynamo.Migration;
 using Dynamo.Models;
 using Dynamo.Properties;
+using Dynamo.Scheduler;
 using Dynamo.Selection;
 using Dynamo.Utilities;
 using System;
@@ -36,10 +38,13 @@ namespace Dynamo.Core
         /// </summary>
         /// <param name="nodeFactory">NodeFactory</param>
         /// <param name="migrationManager">MigrationManager</param>
-        public CustomNodeManager(NodeFactory nodeFactory, MigrationManager migrationManager)
+        public CustomNodeManager(NodeFactory nodeFactory, MigrationManager migrationManager, 
+            EngineController engineController, DynamoScheduler scheduler)
         {
             this.nodeFactory = nodeFactory;
             this.migrationManager = migrationManager;
+            this.engineController = engineController;
+            this.scheduler = scheduler;
         }
 
         #region Fields and properties
@@ -49,12 +54,14 @@ namespace Dynamo.Core
         private readonly Dictionary<Guid, CustomNodeDefinition> loadedCustomNodes =
             new Dictionary<Guid, CustomNodeDefinition>();
 
-        private readonly Dictionary<Guid, CustomNodeWorkspaceModel> loadedWorkspaceModels =
-            new Dictionary<Guid, CustomNodeWorkspaceModel>();
+        private readonly Dictionary<Guid, HomeWorkspaceModel> loadedWorkspaceModels =
+            new Dictionary<Guid, HomeWorkspaceModel>();
 
         private readonly NodeFactory nodeFactory;
         private readonly MigrationManager migrationManager;
-
+        private EngineController engineController;
+        private DynamoScheduler scheduler;
+         
         /// <summary>
         ///     CustomNodeDefinitions for all loaded custom nodes, in load order.
         /// </summary>
@@ -72,7 +79,7 @@ namespace Dynamo.Core
         /// <summary>
         ///     All loaded custom node workspaces.
         /// </summary>
-        public IEnumerable<CustomNodeWorkspaceModel> LoadedWorkspaces
+        public IEnumerable<HomeWorkspaceModel> LoadedWorkspaces
         {
             get { return loadedWorkspaceModels.Values; }
         }
@@ -82,7 +89,7 @@ namespace Dynamo.Core
         /// </summary>
         /// <param name="customNodeId">Custom node ID of a requested workspace</param>
         /// <returns>Custom node workspace by a specified ID</returns>
-        public CustomNodeWorkspaceModel GetWorkspaceById (Guid customNodeId)
+        public HomeWorkspaceModel GetWorkspaceById (Guid customNodeId)
         {
             return loadedWorkspaceModels.ContainsKey(customNodeId) ? loadedWorkspaceModels[customNodeId] : null;
         }
@@ -134,7 +141,7 @@ namespace Dynamo.Core
         public Function CreateCustomNodeInstance(
             Guid id, string nickname = null, bool isTestMode = false)
         {
-            CustomNodeWorkspaceModel workspace;
+            HomeWorkspaceModel workspace;
             CustomNodeDefinition def;
             CustomNodeInfo info;
             // Try to get the definition, initializing the custom node if necessary
@@ -178,7 +185,7 @@ namespace Dynamo.Core
             {
                 if (newInfo.FunctionId == id || newInfo.Name == nickname)
                 {
-                    CustomNodeWorkspaceModel foundWorkspace;
+                    HomeWorkspaceModel foundWorkspace;
                     if (TryGetFunctionWorkspace(newInfo.FunctionId, isTestMode, out foundWorkspace))
                     {
                         node.ResyncWithDefinition(foundWorkspace.CustomNodeDefinition);
@@ -196,7 +203,7 @@ namespace Dynamo.Core
             };
         }
 
-        private static void RegisterCustomNodeInstanceForUpdates(Function node, CustomNodeWorkspaceModel workspace)
+        private static void RegisterCustomNodeInstanceForUpdates(Function node, HomeWorkspaceModel workspace)
         {
             Action defUpdatedHandler = () =>
             {
@@ -284,7 +291,7 @@ namespace Dynamo.Core
         /// <param name="guid">Custom node identifier.</param>
         internal bool Uninitialize(Guid guid)
         {
-            CustomNodeWorkspaceModel ws;
+            HomeWorkspaceModel ws;
             if (loadedWorkspaceModels.TryGetValue(guid, out ws))
             {
                 ws.Dispose();
@@ -386,7 +393,7 @@ namespace Dynamo.Core
         /// </param>
         /// <param name="ws"></param>
         /// <returns>The path to the node or null if it wasn't found.</returns>
-        public bool TryGetFunctionWorkspace(Guid id, bool isTestMode, out CustomNodeWorkspaceModel ws)
+        public bool TryGetFunctionWorkspace(Guid id, bool isTestMode, out HomeWorkspaceModel ws)
         {
             if (Contains(id))
             {
@@ -411,7 +418,7 @@ namespace Dynamo.Core
         /// <returns></returns>
         public bool TryGetFunctionWorkspace(Guid id, bool isTestMode, out ICustomNodeWorkspaceModel ws)
         {
-            CustomNodeWorkspaceModel workSpace;
+            HomeWorkspaceModel workSpace;
             var result = TryGetFunctionWorkspace(id, isTestMode, out workSpace);
             ws = workSpace;
             return result;
@@ -430,7 +437,7 @@ namespace Dynamo.Core
         {
             if (Contains(id))
             {
-                CustomNodeWorkspaceModel ws;
+                HomeWorkspaceModel ws;
                 if (IsInitialized(id) || InitializeCustomNode(id, isTestMode, out ws))
                 {
                     definition = loadedCustomNodes[id];
@@ -534,7 +541,7 @@ namespace Dynamo.Core
         public bool OpenCustomNodeWorkspace(
             XmlDocument xmlDoc, WorkspaceInfo workspaceInfo, bool isTestMode, out WorkspaceModel workspace)
         {
-            CustomNodeWorkspaceModel customNodeWorkspace;
+            HomeWorkspaceModel customNodeWorkspace;
             if (InitializeCustomNode(
                 workspaceInfo,
                 xmlDoc,
@@ -549,7 +556,7 @@ namespace Dynamo.Core
 
         private bool InitializeCustomNode(
             WorkspaceInfo workspaceInfo,
-            XmlDocument xmlDoc, out CustomNodeWorkspaceModel workspace)
+            XmlDocument xmlDoc, out HomeWorkspaceModel workspace)
         {
             // Add custom node definition firstly so that a recursive
             // custom node won't recursively load itself.
@@ -557,14 +564,17 @@ namespace Dynamo.Core
  
             var nodeGraph = NodeGraph.LoadGraphFromXml(xmlDoc, nodeFactory);
            
-            var newWorkspace = new CustomNodeWorkspaceModel(
+            var newWorkspace = new HomeWorkspaceModel(
+                engineController, 
+                scheduler,
                 nodeFactory,
+                Enumerable.Empty<KeyValuePair<Guid,List<ProtoCore.CallSite.RawTraceData>>>(),
                 nodeGraph.Nodes,
                 nodeGraph.Notes,
                 nodeGraph.Annotations,
                 nodeGraph.Presets,              
                 nodeGraph.ElementResolver,
-                workspaceInfo);
+                workspaceInfo, false, false);
 
             
             RegisterCustomNodeWorkspace(newWorkspace);
@@ -573,7 +583,7 @@ namespace Dynamo.Core
             return true;
         }
 
-        private void RegisterCustomNodeWorkspace(CustomNodeWorkspaceModel newWorkspace)
+        private void RegisterCustomNodeWorkspace(HomeWorkspaceModel newWorkspace)
         {
             RegisterCustomNodeWorkspace(
                 newWorkspace,
@@ -582,7 +592,7 @@ namespace Dynamo.Core
         }
 
         private void RegisterCustomNodeWorkspace(
-            CustomNodeWorkspaceModel newWorkspace, CustomNodeInfo info, CustomNodeDefinition definition)
+            HomeWorkspaceModel newWorkspace, CustomNodeInfo info, CustomNodeDefinition definition)
         {
             loadedWorkspaceModels[newWorkspace.CustomNodeId] = newWorkspace;
 
@@ -620,7 +630,7 @@ namespace Dynamo.Core
         /// <param name="isTestMode"></param>
         /// <param name="workspace">The resultant function definition</param>
         /// <returns></returns>
-        private bool InitializeCustomNode(Guid functionId, bool isTestMode, out CustomNodeWorkspaceModel workspace)
+        private bool InitializeCustomNode(Guid functionId, bool isTestMode, out HomeWorkspaceModel workspace)
         {
             try
             {
@@ -666,31 +676,26 @@ namespace Dynamo.Core
         }
 
         /// <summary>
-        ///     Creates a new Custom Node in the manager.
+        /// Creates a new Custom Node in the manager.
         /// </summary>
         /// <param name="name">Name of the custom node.</param>
         /// <param name="category">Category for the custom node.</param>
         /// <param name="description">Description of the custom node.</param>
         /// <param name="functionId">
-        ///     Optional identifier to be used for the custom node. By default, will make a new unique one.
+        /// Optional identifier to be used for the custom node. By default, will make a new unique one.
         /// </param>
         /// <returns>Newly created Custom Node Workspace.</returns>
         internal WorkspaceModel CreateCustomNode(string name, string category, string description, Guid? functionId = null)
         {
             var newId = functionId ?? Guid.NewGuid();
 
-            var info = new WorkspaceInfo()
-            {
-                Name = name,
-                Category = category,
-                Description = description,
-                X = 0,
-                Y = 0,
-                ID = newId.ToString(), 
-                FileName = string.Empty,
-                IsVisibleInDynamoLibrary = true
-            };
-            var workspace = new CustomNodeWorkspaceModel(info, nodeFactory);
+            var workspace = new HomeWorkspaceModel(engineController, scheduler, nodeFactory, false, DynamoModel.IsTestMode, string.Empty);
+            workspace.Name = name;
+            workspace.Category = category;
+            workspace.Description = description;
+            workspace.X = 0;
+            workspace.Y = 0;
+            workspace.IsVisibleInDynamoLibrary = true;
 
             RegisterCustomNodeWorkspace(workspace);
             return workspace;
@@ -733,7 +738,7 @@ namespace Dynamo.Core
         /// <param name="currentWorkspace"> The workspace where</param>
         /// <param name="isTestMode"></param>
         /// <param name="args"></param>
-        internal CustomNodeWorkspaceModel Collapse(
+        internal HomeWorkspaceModel Collapse(
             IEnumerable<NodeModel> selectedNodes,
             IEnumerable<NoteModel> selectedNotes,
             WorkspaceModel currentWorkspace,
@@ -755,7 +760,7 @@ namespace Dynamo.Core
             // 
             UndoRedoRecorder undoRecorder = currentWorkspace.UndoRecorder;
 
-            CustomNodeWorkspaceModel newWorkspace;
+            HomeWorkspaceModel newWorkspace;
 
             using (undoRecorder.BeginActionGroup())
             {
@@ -1147,8 +1152,11 @@ namespace Dynamo.Core
                 #endregion
 
                 var newId = Guid.NewGuid();
-                newWorkspace = new CustomNodeWorkspaceModel(
+                newWorkspace = new HomeWorkspaceModel(
+                    engineController, 
+                    scheduler, 
                     nodeFactory,
+                    Enumerable.Empty<KeyValuePair<Guid, List<ProtoCore.CallSite.RawTraceData>>>(),
                     newNodes,
                     newNotes,
                     newAnnotations,
@@ -1164,7 +1172,7 @@ namespace Dynamo.Core
                         ID = newId.ToString(),
                         FileName = string.Empty,
                         IsVisibleInDynamoLibrary = true
-                    });
+                    }, false, false);
                 
                 newWorkspace.HasUnsavedChanges = true;
 

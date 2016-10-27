@@ -597,7 +597,7 @@ namespace Dynamo.Models
             NodeFactory = new NodeFactory();
             NodeFactory.MessageLogged += LogMessage;
 
-            CustomNodeManager = new CustomNodeManager(NodeFactory, MigrationManager);
+            CustomNodeManager = new CustomNodeManager(NodeFactory, MigrationManager, EngineController, Scheduler);
             InitializeCustomNodeManager();
 
             extensionManager = new ExtensionManager();
@@ -940,8 +940,8 @@ namespace Dynamo.Models
                     {
                         customNodeSearchRegistry.Remove(info.FunctionId);
                         SearchModel.Remove(searchElement);
-                        var workspacesToRemove = _workspaces.FindAll(w => w is CustomNodeWorkspaceModel
-                            && (w as CustomNodeWorkspaceModel).CustomNodeId == id);
+                        var workspacesToRemove = _workspaces.FindAll(w => w is HomeWorkspaceModel
+                            && (w as HomeWorkspaceModel).CustomNodeId == id);
                         workspacesToRemove.ForEach(w => RemoveWorkspace(w));
                     }
                 };
@@ -988,16 +988,16 @@ namespace Dynamo.Models
 
             var symbolSearchElement = new NodeModelSearchElement(symbolData)
             {
-                IsVisibleInSearch = CurrentWorkspace is CustomNodeWorkspaceModel
+                IsVisibleInSearch = CurrentWorkspace is HomeWorkspaceModel
             };
             var outputSearchElement = new NodeModelSearchElement(outputData)
             {
-                IsVisibleInSearch = CurrentWorkspace is CustomNodeWorkspaceModel
+                IsVisibleInSearch = CurrentWorkspace is HomeWorkspaceModel
             };
 
             WorkspaceHidden += _ =>
             {
-                var isVisible = CurrentWorkspace is CustomNodeWorkspaceModel;
+                var isVisible = CurrentWorkspace is HomeWorkspaceModel;
                 symbolSearchElement.IsVisibleInSearch = isVisible;
                 outputSearchElement.IsVisibleInSearch = isVisible;
             };
@@ -1597,7 +1597,7 @@ namespace Dynamo.Models
         ///     Add a new, visible Custom Node workspace to Dynamo
         /// </summary>
         /// <param name="workspace"><see cref="CustomNodeWorkspaceModel"/> to add</param>
-        public void AddCustomNodeWorkspace(CustomNodeWorkspaceModel workspace)
+        public void AddCustomNodeWorkspace(HomeWorkspaceModel workspace)
         {
             AddWorkspace(workspace);
         }
@@ -1625,10 +1625,10 @@ namespace Dynamo.Models
         /// <returns>True if workspace was found and open</returns>
         public bool OpenCustomNodeWorkspace(Guid guid)
         {
-            CustomNodeWorkspaceModel customNodeWorkspace;
+            HomeWorkspaceModel customNodeWorkspace;
             if (CustomNodeManager.TryGetFunctionWorkspace(guid, IsTestMode, out customNodeWorkspace))
             {
-                if (!Workspaces.OfType<CustomNodeWorkspaceModel>().Contains(customNodeWorkspace))
+                if (!Workspaces.OfType<HomeWorkspaceModel>().Contains(customNodeWorkspace))
                     AddWorkspace(customNodeWorkspace);
 
                 CurrentWorkspace = customNodeWorkspace;

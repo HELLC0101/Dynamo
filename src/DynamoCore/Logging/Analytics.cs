@@ -26,10 +26,7 @@ namespace Dynamo.Logging
 
         static void OnWorkspaceAdded(WorkspaceModel obj)
         {
-            if (obj is CustomNodeWorkspaceModel)
-                TrackScreenView("CustomWorkspace");
-            else
-                TrackScreenView("Workspace");
+            TrackScreenView("Workspace");
         }
 
         /// <summary>

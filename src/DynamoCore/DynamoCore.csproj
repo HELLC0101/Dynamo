@@ -229,7 +229,6 @@ limitations under the License.
     <Compile Include="Library\FunctionType.cs" />
     <Compile Include="Engine\EngineController.cs" />
     <Compile Include="Engine\LiveRunnerServices.cs" />
-    <Compile Include="Graph\Workspaces\CustomNodeWorkspaceModel.cs" />
     <Compile Include="Graph\Workspaces\HomeWorkspaceModel.cs" />
     <Compile Include="Graph\Nodes\CodeBlockNode.cs" />
     <Compile Include="Engine\NodeToCode\NodeToCode.cs" />
