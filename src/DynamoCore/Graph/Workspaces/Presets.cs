@@ -1,6 +1,6 @@
-﻿using Dynamo.Core;
-using Dynamo.Graph.Nodes;
+﻿using Dynamo.Graph.Nodes;
 using Dynamo.Graph.Presets;
+using Dynamo.Logging;
 using Dynamo.Selection;
 using System;
 using System.Collections.Generic;
@@ -11,20 +11,15 @@ namespace Dynamo.Graph.Workspaces
 {
     internal class Presets
     {
-        private readonly List<PresetModel> presets;
-
         /// <summary>
-        ///     A set of input parameter states, this can be used to set the graph to a serialized state.
+        /// Create a new preset state from a set of NodeModels and adds this new state to this presets collection
         /// </summary>
-        public IEnumerable<PresetModel> Presets { get { return presets; } }
-
-        /// <summary>
-        ///  this method creates a new preset state from a set of NodeModels and adds this new state to this presets collection
-        /// </summary>
-        /// <param name="name">the name of preset state</param>
-        /// <param name="description">a description of what the state does</param>
-        /// <param name="currentSelection">a set of NodeModels that are to be serialized in this state</param>
-        private static PresetModel AddPresetCore(string name, string description, IEnumerable<NodeModel> currentSelection, List<PresetModel> presets)
+        /// <param name="name">The name of the preset.</param>
+        /// <param name="description">A description of what the state does</param>
+        /// <param name="currentSelection">A collection of <see cref="NodeModel"/> that are to be serialized in this state</param>
+        /// <param name="presets">A collection of <see cref="PresetModel"/>.</param>
+        private static PresetModel CreatePresetFromModelIdsCore(string name, string description, IEnumerable<NodeModel> currentSelection, 
+            IEnumerable<PresetModel> presets)
         {
             if (currentSelection == null || currentSelection.Count() < 1)
             {
@@ -38,27 +33,15 @@ namespace Dynamo.Graph.Workspaces
                 throw new ArgumentException("duplicate id in collection");
             }
 
-            presets.Add(newstate);
+            ((List<PresetModel>)presets).Add(newstate);
             return newstate;
         }
 
-        /// <summary>
-        /// Removes a specified <see cref="PresetModel"/> object from the preset collection of the workspace.
-        /// </summary>
-        /// <param name="state"><see cref="PresetModel"/> object to remove.</param>
-        public static void RemovePreset(PresetModel state, List<PresetModel> presets)
-        {
-            if (presets.Contains(state))
-            {
-                presets.Remove(state);
-            }
-        }
-
-        internal static void ApplyPreset(PresetModel state, WorkspaceModel workspace)
+        internal static void ApplyPreset(PresetModel state, WorkspaceModel workspace, ILogger logger)
         {
             if (state == null)
             {
-                Log("Attempted to apply a PresetState that was null");
+                logger.Log("Attempted to apply a PresetState that was null");
                 return;
             }
             //start an undoBeginGroup
@@ -91,23 +74,14 @@ namespace Dynamo.Graph.Workspaces
             }
         }
 
-        internal static PresetModel AddPreset(string name, string description, IEnumerable<Guid> IDSToSave, WorkspaceModel workspace)
+        internal static PresetModel CreatePresetFromModelIds(string name, string description, IEnumerable<Guid> IDSToSave, WorkspaceModel workspace)
         {
             //lookup the nodes by their ID, can also check that we find all of them....
             var nodesFromIDs = workspace.Nodes.Where(node => IDSToSave.Contains(node.GUID));
             //access the presetsCollection and add a new state based on the current selection
-            var newpreset = AddPresetCore(name, description, nodesFromIDs);
+            var newpreset = CreatePresetFromModelIdsCore(name, description, nodesFromIDs, workspace.Presets);
             workspace.HasUnsavedChanges = true;
             return newpreset;
-        }
-
-        /// <summary>
-        /// Adds a specified collection <see cref="PresetModel"/> objects to the preset collection of the workspace.
-        /// </summary>
-        /// <param name="presetCollection"><see cref="PresetModel"/> objects to add.</param>
-        public static void ImportPresets(IEnumerable<PresetModel> presetCollection)
-        {
-            presets.AddRange(presetCollection);
         }
     }
 }

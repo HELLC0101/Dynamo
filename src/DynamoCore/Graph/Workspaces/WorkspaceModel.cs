@@ -88,6 +88,7 @@ namespace Dynamo.Graph.Workspaces
         private double scaleFactor;
         private bool hasNodeInSyncWithDefinition;
         protected Guid guid;
+        private readonly List<PresetModel> presets;
 
         /// <summary>
         /// This is set to true after a workspace is added.
@@ -710,6 +711,11 @@ namespace Dynamo.Graph.Workspaces
                 WorkspaceEvents.OnWorkspaceSettingsChanged(scaleFactor);
             }
         }
+
+        /// <summary>
+        /// A set of input parameter states, this can be used to set the graph to a serialized state.
+        /// </summary>
+        public IEnumerable<PresetModel> Presets { get { return presets; } }
 
         #endregion
 
@@ -1599,6 +1605,15 @@ namespace Dynamo.Graph.Workspaces
 
         #endregion
 
+        /// <summary>
+        /// Adds a collection <see cref="PresetModel"/> to the Presets collection.
+        /// </summary>
+        /// <param name="presetCollection"><see cref="PresetModel"/> objects to add.</param>
+        public void AddPresets(IEnumerable<PresetModel> presetCollection)
+        {
+            presets.AddRange(presetCollection);
+        }
+
         #region Undo/Redo Supporting Methods
 
         internal void Undo()
@@ -1744,7 +1759,12 @@ namespace Dynamo.Graph.Workspaces
                     else if (model is PresetModel)
                     {
                         undoRecorder.RecordDeletionForUndo(model);
-                        RemovePreset(model as PresetModel);
+
+                        var preset = model as PresetModel;
+                        if(Presets.Contains(preset))
+                        {
+                            presets.Remove(preset);
+                        }
                     }
 
                     else if (model is NodeModel)
@@ -1839,7 +1859,11 @@ namespace Dynamo.Graph.Workspaces
             }
             else if (model is PresetModel)
             {
-                RemovePreset(model as PresetModel);
+                var preset = model as PresetModel;
+                if (presets.Contains(preset))
+                {
+                    presets.Remove(preset);
+                }
             }
             else if (model is ConnectorModel)
             {

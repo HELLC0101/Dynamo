@@ -58,7 +58,7 @@ namespace DynamoCLI
                 var presets = NodeGraph.LoadPresetsFromXml(presetsDoc, graph.Nodes);
 
                 //load the presets contained in the presetsfile into the workspace,
-                model.CurrentWorkspace.ImportPresets(presets);
+                model.CurrentWorkspace.AddPresets(presets);
             }
 
             //build a list of states, for now, none, a single state, or all of them
