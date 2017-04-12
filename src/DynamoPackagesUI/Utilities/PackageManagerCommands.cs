@@ -1,5 +1,4 @@
-﻿using Dynamo.DynamoPackagesUI.Properties;
-using Dynamo.Models;
+﻿using Dynamo.Models;
 using Dynamo.PackageManager;
 using System;
 using System.Collections.Generic;

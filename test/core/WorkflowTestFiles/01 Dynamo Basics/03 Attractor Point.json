@@ -1,0 +1,562 @@
+{
+  "Uuid": "f1b7496e-0daf-46b8-87ab-35e8f347a058",
+  "IsCustomNode": false,
+  "LastModified": "2017-04-04T18:11:11.2074523Z",
+  "LastModifiedBy": "None provided",
+  "Description": "",
+  "Name": "Home",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Nodes": [
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.ByCoordinates@double,double,double",
+      "DisplayName": "Point.ByCoordinates",
+      "InputPorts": [
+        {
+          "DisplayName": "x",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "3e05f652-c5a8-440e-934c-02c41b648854"
+        },
+        {
+          "DisplayName": "y",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "d9782640-2db4-437c-aedd-47cdc79f6b9c"
+        },
+        {
+          "DisplayName": "z",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "3fe5cf0c-a44f-49cf-aad7-5dc47add0e3a"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "Point",
+          "Description": "Point",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "01b012b4-a0d9-4c24-85f1-4cd0068f8d72"
+        }
+      ],
+      "Replication": "CrossProduct",
+      "Description": "Form a Point given 3 cartesian coordinates\n\nPoint.ByCoordinates (x: double = 0, y: double = 0, z: double = 0): Point",
+      "Uuid": "9c0a93b2-c706-4ba2-8d70-60e4ab55348d"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "1..50..5;",
+      "DisplayName": "Code Block",
+      "InputPorts": [],
+      "OutputPorts": [
+        {
+          "DisplayName": "",
+          "Description": "t6BBA4B28C5E54CF89F300D510499A00E_0",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "2e1ff68b-ee40-4684-bf0f-8bb672f34828"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly",
+      "Uuid": "d0036752-d644-4511-9937-c17b4f152313"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.ByCoordinates@double,double,double",
+      "DisplayName": "Point.ByCoordinates",
+      "InputPorts": [
+        {
+          "DisplayName": "x",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "f0267a7d-1b72-47a3-ae6d-6efb5bee0b68"
+        },
+        {
+          "DisplayName": "y",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "a71f9f84-e175-462c-b3cb-80bfdf31a74b"
+        },
+        {
+          "DisplayName": "z",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "84486126-8e70-4a3b-8433-a9e957c9d9f9"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "Point",
+          "Description": "Point",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "54f85e66-dab5-46bd-b321-fc46a158f452"
+        }
+      ],
+      "Replication": "Longest",
+      "Description": "Form a Point given 3 cartesian coordinates\n\nPoint.ByCoordinates (x: double = 0, y: double = 0, z: double = 0): Point",
+      "Uuid": "dbfdf172-9d85-41a5-9d2f-f57d1a62402d"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleSlider, CoreNodeModels",
+      "NodeType": "FloatRangeInputNode",
+      "RangeMax": 60.0,
+      "RangeMin": -10.0,
+      "RangeStep": 0.1,
+      "InputValue": 37.5378569540097,
+      "DisplayName": "Number Slider",
+      "InputPorts": [],
+      "OutputPorts": [
+        {
+          "DisplayName": "",
+          "Description": "Double",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "8e268a8b-a745-4d52-ac68-43e17bb87fc8"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A slider that produces numeric values.",
+      "Uuid": "7f7418c2-598d-4957-981b-aea1761ccc03"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleSlider, CoreNodeModels",
+      "NodeType": "FloatRangeInputNode",
+      "RangeMax": 60.0,
+      "RangeMin": -10.0,
+      "RangeStep": 0.1,
+      "InputValue": 26.3806291337983,
+      "DisplayName": "Number Slider",
+      "InputPorts": [],
+      "OutputPorts": [
+        {
+          "DisplayName": "",
+          "Description": "Double",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "ba31c73e-9608-434b-8661-341a7a0bf2c3"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A slider that produces numeric values.",
+      "Uuid": "84fb372a-fa22-4d3b-8888-e794becddcc2"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Geometry.DistanceTo@Autodesk.DesignScript.Geometry.Geometry",
+      "DisplayName": "Geometry.DistanceTo",
+      "InputPorts": [
+        {
+          "DisplayName": "geometry",
+          "Description": "Autodesk.DesignScript.Geometry.Geometry",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "4d9dbdcd-fbb7-4864-a19e-592f93f58c62"
+        },
+        {
+          "DisplayName": "other",
+          "Description": "Geometry",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "3ca1d9a8-e531-4b9e-8c12-6f47f34289e8"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "double",
+          "Description": "The distance",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "3861479f-d3fb-4164-93a0-7ab033fd8a57"
+        }
+      ],
+      "Replication": "Longest",
+      "Description": "Obtain the distance from this Geometry to another\n\nGeometry.DistanceTo (other: Geometry): double",
+      "Uuid": "8163332d-21ec-4257-9a5a-0b69462db44f"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Flatten@var[]..[]",
+      "DisplayName": "Flatten",
+      "InputPorts": [
+        {
+          "DisplayName": "list",
+          "Description": "list of values\n\nvar[]..[]",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "53b4f8a9-8c6b-48e8-8a6c-9cb5d5166c43"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "var[]..[]",
+          "Description": "var[]..[]",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "38445dcd-4a6d-4b2f-8ae6-79ebca7ab9f3"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Returns the flattened 1D list of the multi-dimensional input list. If the input is a single value, returns that value.\n\nFlatten (list: var[]..[]): var[]..[]",
+      "Uuid": "0de075f3-6c86-4193-b479-2397c3bc988a"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleInput, CoreNodeModels",
+      "NodeType": "FloatInputNode",
+      "InputValue": 0.0,
+      "DisplayName": "Number",
+      "InputPorts": [],
+      "OutputPorts": [
+        {
+          "DisplayName": "",
+          "Description": "",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "f3c4756b-7e3b-4ea6-a15c-eef4127516da"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a number.",
+      "Uuid": "efa79b83-e804-4d7b-8d12-42e0f3169518"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "x/15;",
+      "DisplayName": "Code Block",
+      "InputPorts": [
+        {
+          "DisplayName": "x",
+          "Description": "x",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "426022b2-4205-4a72-b171-b5b8245b5f54"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "",
+          "Description": "t6BBA4B28C5E54CF89F300D510499A00E_0",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "6d6acf2d-e4a9-41f8-9936-58786e45f48b"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly",
+      "Uuid": "89a6dea1-9e7f-45c6-bd41-ab9599418d4f"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Cylinder.ByPointsRadius@Autodesk.DesignScript.Geometry.Point,Autodesk.DesignScript.Geometry.Point,double",
+      "DisplayName": "Cylinder.ByPointsRadius",
+      "InputPorts": [
+        {
+          "DisplayName": "startPoint",
+          "Description": "Point\nDefault value : Autodesk.DesignScript.Geometry.Point.ByCoordinates(0, 0, 0) (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "498927c7-f9b7-4499-b3b5-6085c6c32a06"
+        },
+        {
+          "DisplayName": "endPoint",
+          "Description": "Point\nDefault value : Autodesk.DesignScript.Geometry.Point.ByCoordinates(0, 0, 1) (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "b60b2dcd-b992-47bd-8c7f-415779eac917"
+        },
+        {
+          "DisplayName": "radius",
+          "Description": "double\nDefault value : 1",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "7b143d93-18fd-49dd-b9c7-0077c981bca6"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "Cylinder",
+          "Description": "Cylinder",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "fec8c6ca-00bf-4e8c-9ed9-8fb6d39941de"
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Construct a Solid Cylinder given the bottom and top center point of the Cylinder.\n\nCylinder.ByPointsRadius (startPoint: Point = Autodesk.DesignScript.Geometry.Point.ByCoordinates(0, 0, 0), endPoint: Point = Autodesk.DesignScript.Geometry.Point.ByCoordinates(0, 0, 1), radius: double = 1): Cylinder",
+      "Uuid": "ef3eaed0-7a8e-47a9-b06e-416bb30ec72f"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.X",
+      "DisplayName": "Point.X",
+      "InputPorts": [
+        {
+          "DisplayName": "point",
+          "Description": "Autodesk.DesignScript.Geometry.Point",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "1fcc995e-b3dd-4329-b2d7-53afdd12463a"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "double",
+          "Description": "double",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "f1cf10de-3359-476d-a48e-98f68a77595d"
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Get the X component of a Point\n\nPoint.X: double",
+      "Uuid": "d16627d1-695f-4997-a7d2-3f8754f19589"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.Y",
+      "DisplayName": "Point.Y",
+      "InputPorts": [
+        {
+          "DisplayName": "point",
+          "Description": "Autodesk.DesignScript.Geometry.Point",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "b0cb5e53-5df6-48c6-b43a-029fc247b71e"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "double",
+          "Description": "double",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "cc8e8763-3a8c-4d73-b8e2-c0619f55ed3f"
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Get the Y component of a Point\n\nPoint.Y: double",
+      "Uuid": "01556cbd-b690-439c-848f-aa29ec349a10"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.ByCoordinates@double,double,double",
+      "DisplayName": "Point.ByCoordinates",
+      "InputPorts": [
+        {
+          "DisplayName": "x",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "7f841946-d944-4fc8-9f48-d37206e94df3"
+        },
+        {
+          "DisplayName": "y",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "a973ff7c-1531-49a0-a3dc-937a414ad412"
+        },
+        {
+          "DisplayName": "z",
+          "Description": "double\nDefault value : 0 (disabled)",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "6348c2dd-512f-4d87-aa68-7c3c765f070e"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "Point",
+          "Description": "Point",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "bc89619d-edd1-4d6d-9174-58cbfe2d99fd"
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Form a Point given 3 cartesian coordinates\n\nPoint.ByCoordinates (x: double = 0, y: double = 0, z: double = 0): Point",
+      "Uuid": "a55c02bc-de2c-40f2-bb45-2e3a4e4a08e1"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "x/2;",
+      "DisplayName": "Code Block",
+      "InputPorts": [
+        {
+          "DisplayName": "x",
+          "Description": "x",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "9c7a31ae-ca75-4899-833d-dc757ad5034e"
+        }
+      ],
+      "OutputPorts": [
+        {
+          "DisplayName": "",
+          "Description": "t6BBA4B28C5E54CF89F300D510499A00E_0",
+          "Level": 2,
+          "UseLevels": false,
+          "ShouldKeepListStructure": false,
+          "Uuid": "d4ca5892-4627-4aa2-9029-d099686b1d54"
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly",
+      "Uuid": "14f9df69-7ef3-4e31-808b-016d3bc301bb"
+    }
+  ],
+  "Notes": [],
+  "Connectors": [
+    {
+      "Start": "01b012b4-a0d9-4c24-85f1-4cd0068f8d72",
+      "End": "53b4f8a9-8c6b-48e8-8a6c-9cb5d5166c43",
+      "Uuid": "36eb670b-8de2-43a0-a3bd-a06c5c2011b5"
+    },
+    {
+      "Start": "2e1ff68b-ee40-4684-bf0f-8bb672f34828",
+      "End": "d9782640-2db4-437c-aedd-47cdc79f6b9c",
+      "Uuid": "356c5716-86c2-459c-84d6-81886b67ce97"
+    },
+    {
+      "Start": "2e1ff68b-ee40-4684-bf0f-8bb672f34828",
+      "End": "3e05f652-c5a8-440e-934c-02c41b648854",
+      "Uuid": "3b9b5b6d-0249-4acd-abb0-7a8a1fa986fc"
+    },
+    {
+      "Start": "54f85e66-dab5-46bd-b321-fc46a158f452",
+      "End": "3ca1d9a8-e531-4b9e-8c12-6f47f34289e8",
+      "Uuid": "cefb1b92-a414-47cd-878b-98d3fb7fe6d6"
+    },
+    {
+      "Start": "8e268a8b-a745-4d52-ac68-43e17bb87fc8",
+      "End": "f0267a7d-1b72-47a3-ae6d-6efb5bee0b68",
+      "Uuid": "5b5067d7-2d18-43de-ad1a-106174a7eebf"
+    },
+    {
+      "Start": "ba31c73e-9608-434b-8661-341a7a0bf2c3",
+      "End": "a71f9f84-e175-462c-b3cb-80bfdf31a74b",
+      "Uuid": "27f299f4-7c89-41b5-af47-cc44ffde75df"
+    },
+    {
+      "Start": "3861479f-d3fb-4164-93a0-7ab033fd8a57",
+      "End": "426022b2-4205-4a72-b171-b5b8245b5f54",
+      "Uuid": "906f66bd-472f-45ea-ac20-a6a42c20b8c4"
+    },
+    {
+      "Start": "3861479f-d3fb-4164-93a0-7ab033fd8a57",
+      "End": "9c7a31ae-ca75-4899-833d-dc757ad5034e",
+      "Uuid": "dbc298a4-bffc-4869-9a95-3c6b6da4062b"
+    },
+    {
+      "Start": "38445dcd-4a6d-4b2f-8ae6-79ebca7ab9f3",
+      "End": "4d9dbdcd-fbb7-4864-a19e-592f93f58c62",
+      "Uuid": "87e3d704-2521-4c61-a11a-c0f1341c4f25"
+    },
+    {
+      "Start": "38445dcd-4a6d-4b2f-8ae6-79ebca7ab9f3",
+      "End": "498927c7-f9b7-4499-b3b5-6085c6c32a06",
+      "Uuid": "6239cc6e-b2cd-4a78-974b-772e07fa98d1"
+    },
+    {
+      "Start": "38445dcd-4a6d-4b2f-8ae6-79ebca7ab9f3",
+      "End": "1fcc995e-b3dd-4329-b2d7-53afdd12463a",
+      "Uuid": "be69bd81-8201-4208-872d-51c6b69b15fe"
+    },
+    {
+      "Start": "38445dcd-4a6d-4b2f-8ae6-79ebca7ab9f3",
+      "End": "b0cb5e53-5df6-48c6-b43a-029fc247b71e",
+      "Uuid": "cb3b0f93-d2e5-4a21-a911-e31fca59f5d7"
+    },
+    {
+      "Start": "f3c4756b-7e3b-4ea6-a15c-eef4127516da",
+      "End": "3fe5cf0c-a44f-49cf-aad7-5dc47add0e3a",
+      "Uuid": "9b4c1807-5aab-4fe5-994d-f629484e1129"
+    },
+    {
+      "Start": "f3c4756b-7e3b-4ea6-a15c-eef4127516da",
+      "End": "84486126-8e70-4a3b-8433-a9e957c9d9f9",
+      "Uuid": "bbb4f464-b4f1-4a7a-8670-ba02a8b5b3f9"
+    },
+    {
+      "Start": "6d6acf2d-e4a9-41f8-9936-58786e45f48b",
+      "End": "7b143d93-18fd-49dd-b9c7-0077c981bca6",
+      "Uuid": "b3a62f17-ed20-4e9e-83d5-8b2e1bfb92ef"
+    },
+    {
+      "Start": "f1cf10de-3359-476d-a48e-98f68a77595d",
+      "End": "7f841946-d944-4fc8-9f48-d37206e94df3",
+      "Uuid": "933c03e7-9226-498a-9a2a-8d0306290461"
+    },
+    {
+      "Start": "cc8e8763-3a8c-4d73-b8e2-c0619f55ed3f",
+      "End": "a973ff7c-1531-49a0-a3dc-937a414ad412",
+      "Uuid": "b65a987b-03c0-491d-84a9-0cdb250e80e8"
+    },
+    {
+      "Start": "bc89619d-edd1-4d6d-9174-58cbfe2d99fd",
+      "End": "b60b2dcd-b992-47bd-8c7f-415779eac917",
+      "Uuid": "83f47220-9eb1-43ea-a372-be9832b7c6a4"
+    },
+    {
+      "Start": "d4ca5892-4627-4aa2-9029-d099686b1d54",
+      "End": "6348c2dd-512f-4d87-aa68-7c3c765f070e",
+      "Uuid": "0b0fb715-569e-4d47-b145-bf6f14fa085a"
+    }
+  ],
+  "Annotations": [],
+  "Cameras": [],
+  "Dependencies": []
+}
